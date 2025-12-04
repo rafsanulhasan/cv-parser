@@ -88,12 +88,19 @@ interface ProgressStep {
                           style="padding: 8px 15px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap;">
                       {{ isPullingEmbedding ? 'Downloading...' : 'Download' }}
                   </button>
+                  <button *ngIf="selectedProvider === 'ollama'" 
+                          (click)="deleteEmbeddingModel()" 
+                          [disabled]="!selectedEmbeddingModelId || isPullingEmbedding || !isModelInstalled(selectedEmbeddingModelId, embeddingModels)"
+                          [style.opacity]="(!selectedEmbeddingModelId || isPullingEmbedding || !isModelInstalled(selectedEmbeddingModelId, embeddingModels)) ? 0.5 : 1"
+                          style="padding: 8px 15px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap; margin-left: 5px;">
+                      Delete
+                  </button>
               </div>
               
               <!-- Embedding Progress -->
               <div *ngIf="isPullingEmbedding" style="margin-top: 10px; padding: 10px; background: #e2e3e5; border-radius: 4px;">
                 <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                    <strong>Downloading...</strong>
+                    <strong>{{ embeddingPullProgress.status.startsWith('Deleting') ? 'Deleting...' : 'Downloading...' }}</strong>
                     <span>{{ embeddingPullProgress.percent }}%</span>
                 </div>
                 <div style="height: 10px; background: #fff; border-radius: 5px; overflow: hidden;">
@@ -110,7 +117,7 @@ interface ProgressStep {
             <div style="margin-bottom: 15px;">
               <label style="display: block; font-weight: bold; margin-bottom: 5px;">Chat Model (Data Extraction)</label>
               <div style="display: flex; gap: 10px;">
-                  <select [ngModel]="selectedChatModelId" (ngModelChange)="onChatModelChange($event)" style="flex: 1; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
+                  <select [ngModel]="selectedChatModelId" (ngModelChange)="onChatModelChange($event)" [disabled]="isPullingChat" style="flex: 1; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
                     <ng-container *ngIf="selectedProvider === 'ollama'; else simpleChat">
                         <optgroup label="Installed Models (Ready)">
                             <option *ngFor="let model of getInstalledModels(availableChatModels)" [value]="model.id">
@@ -136,12 +143,19 @@ interface ProgressStep {
                           style="padding: 8px 15px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap;">
                       Download
                   </button>
+                  <button *ngIf="selectedProvider === 'ollama'" 
+                          (click)="deleteChatModel()" 
+                          [disabled]="!selectedChatModelId || isPullingChat || !isModelInstalled(selectedChatModelId, availableChatModels)"
+                          [style.opacity]="(!selectedChatModelId || isPullingChat || !isModelInstalled(selectedChatModelId, availableChatModels)) ? 0.5 : 1"
+                          style="padding: 8px 15px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap; margin-left: 5px;">
+                      Delete
+                  </button>
               </div>
 
               <!-- Chat Progress -->
               <div *ngIf="isPullingChat" style="margin-top: 10px; padding: 10px; background: #e2e3e5; border-radius: 4px;">
                 <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                    <strong>Downloading...</strong>
+                    <strong>{{ chatPullProgress.status.startsWith('Deleting') ? 'Deleting...' : 'Downloading...' }}</strong>
                     <span>{{ chatPullProgress.percent }}%</span>
                 </div>
                 <div style="height: 10px; background: #fff; border-radius: 5px; overflow: hidden;">
@@ -447,6 +461,64 @@ export class AppComponent implements OnInit {
   async downloadChatModel () {
     if ( !this.selectedChatModelId ) return;
     await this.pullOllamaModel( this.selectedChatModelId, 'chat' );
+  }
+
+  async deleteEmbeddingModel () {
+    if ( !this.selectedEmbeddingModelId ) return;
+    if ( !confirm( `Are you sure you want to delete ${ this.selectedEmbeddingModelId }?` ) ) return;
+
+    this.isPullingEmbedding = true;
+    this.embeddingPullProgress = { status: 'Deleting...', completed: 0, total: 0, percent: 100 };
+
+    try {
+      console.log( 'Starting delete process for embedding model:', this.selectedEmbeddingModelId );
+      // Add a small delay so the user sees the "Deleting..." state
+      await new Promise( resolve => setTimeout( resolve, 1000 ) );
+
+      console.log( 'Calling ollamaService.deleteModel...' );
+      const success = await this.ollamaService.deleteModel( this.selectedEmbeddingModelId );
+      console.log( 'Delete result:', success );
+
+      console.log( 'Refreshing models...' );
+      await this.modelRegistry.refreshModels();
+      console.log( 'Models refreshed.' );
+
+      // Reset selection if needed, or just let the UI update status
+    } catch ( e ) {
+      console.error( 'Delete failed:', e );
+      alert( 'Failed to delete model: ' + e );
+    } finally {
+      this.isPullingEmbedding = false;
+      this.embeddingPullProgress = { status: '', completed: 0, total: 0, percent: 0 };
+    }
+  }
+
+  async deleteChatModel () {
+    if ( !this.selectedChatModelId ) return;
+    if ( !confirm( `Are you sure you want to delete ${ this.selectedChatModelId }?` ) ) return;
+
+    this.isPullingChat = true;
+    this.chatPullProgress = { status: 'Deleting...', completed: 0, total: 0, percent: 100 };
+
+    try {
+      console.log( 'Starting delete process for chat model:', this.selectedChatModelId );
+      // Add a small delay so the user sees the "Deleting..." state
+      await new Promise( resolve => setTimeout( resolve, 1000 ) );
+
+      console.log( 'Calling ollamaService.deleteModel...' );
+      const success = await this.ollamaService.deleteModel( this.selectedChatModelId );
+      console.log( 'Delete result:', success );
+
+      console.log( 'Refreshing models...' );
+      await this.modelRegistry.refreshModels();
+      console.log( 'Models refreshed.' );
+    } catch ( e ) {
+      console.error( 'Delete failed:', e );
+      alert( 'Failed to delete model: ' + e );
+    } finally {
+      this.isPullingChat = false;
+      this.chatPullProgress = { status: '', completed: 0, total: 0, percent: 0 };
+    }
   }
 
   async pullOllamaModel ( modelName: string, type: 'chat' | 'embedding' ) {

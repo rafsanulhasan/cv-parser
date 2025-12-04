@@ -433,7 +433,29 @@ upgrade(db, oldVersion, newVersion, transaction) {
 4. Wait for "Success" status
 5. Repeat for chat model (e.g., "llama3:8b")
 
-**User Story 1.1.3: Upload and Process CV**:
+**User Story 1.1.3: Delete Installed Models**:
+
+- **As** an unemployed technical Privacy-Conscious person
+- **I want to** delete installed models
+- **So that** I can free up disk space when I no longer need a specific model
+
+**Acceptance Criteria**:
+
+- "Delete" button visible for installed models
+- "Delete" button enabled only when model is installed
+- Clicking "Delete" removes model from local Ollama
+- UI shows "Deleting..." status
+- Dropdowns disabled during deletion
+- After deletion, model moves to "Available to Download" list
+
+**Tasks**:
+
+1. Select installed model
+2. Click "Delete"
+3. Verify "Deleting..." status
+4. Verify model removed and "Download" button enabled
+
+**User Story 1.1.4: Upload and Process CV**:
 
 - **As** an unemloyed technical Privacy-Conscious person
 - **I want to** upload my CV
