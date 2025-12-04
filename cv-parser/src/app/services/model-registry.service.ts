@@ -253,8 +253,14 @@ export class ModelRegistryService {
         const normalize = ( name: string ) => name.split( ':' )[ 0 ];
 
         // Chat Models: All installed + Uninstalled Chat Recommendations
-        // Start with installed
-        const chatCandidates = allOllamaModelsProcessed.filter( m => m.isInstalled || m.type === 'chat' );
+        // Start with installed, but EXCLUDE known embedding models
+        const chatCandidates = allOllamaModelsProcessed.filter( m => {
+          const isEmbedding = m.type === 'embedding' ||
+            m.id.includes( 'embed' ) ||
+            ( m.details && typeof m.details === 'object' && 'families' in m.details && Array.isArray( ( m.details as any ).families ) && ( m.details as any ).families.includes( 'embedding' ) );
+
+          return ( m.isInstalled || m.type === 'chat' ) && !isEmbedding;
+        } );
 
         // Add recommendations
         recommendedChatModels.forEach( rec => {

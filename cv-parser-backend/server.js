@@ -104,8 +104,15 @@ app.post( '/extract', async ( req, res ) => {
 // Endpoint to scrape Ollama library
 app.get( '/ollama/library', async ( req, res ) => {
     const type = req.query.type || 'chat'; // 'chat' or 'embedding'
-    // User requested q=embedding for better results
-    const queryParam = type === 'embedding' ? 'q=embedding' : 'c=chat';
+
+    // User requested q=embedding for embeddings and q=tools for chat
+    let queryParam = 'c=chat';
+    if ( type === 'embedding' ) {
+        queryParam = 'q=embedding';
+    } else if ( type === 'chat' ) {
+        queryParam = 'q=tools';
+    }
+
     const url = `https://ollama.com/search?${ queryParam }`;
 
     console.log( `Fetching Ollama library: ${ url }` );

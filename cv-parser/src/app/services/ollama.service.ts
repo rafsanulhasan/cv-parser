@@ -133,7 +133,7 @@ export class OllamaService {
         }
     }
 
-    async pullModel ( modelName: string, progressCallback?: ( status: string, completed: number, total: number ) => void ) {
+    async pullModel ( modelName: string, progressCallback?: ( status: string, completed: number, total: number, digest?: string ) => void ) {
         const MAX_RETRIES = 3;
         const STALL_TIMEOUT = 30000; // 30 seconds without progress
 
@@ -182,7 +182,7 @@ export class OllamaService {
                             if ( json.error ) throw new Error( json.error );
 
                             if ( progressCallback ) {
-                                progressCallback( json.status, json.completed || 0, json.total || 0 );
+                                progressCallback( json.status, json.completed || 0, json.total || 0, json.digest );
                             }
                         } catch ( e ) {
                             // Ignore parse errors for partial chunks
@@ -202,7 +202,7 @@ export class OllamaService {
 
                 // Notify retry
                 if ( progressCallback ) {
-                    progressCallback( `Download failed/stalled. Retrying (Attempt ${ attempt + 1 })...`, 0, 0 );
+                    progressCallback( `Download failed/stalled. Retrying (Attempt ${ attempt + 1 })...`, 0, 0, undefined );
                 }
 
                 // Cleanup partial download
@@ -225,7 +225,7 @@ export class OllamaService {
                     { role: 'system', content: systemPrompt },
                     { role: 'user', content: userPrompt }
                 ],
-                stream: false,
+                stream: true,
                 format: 'json'
             } )
         } );
@@ -234,13 +234,36 @@ export class OllamaService {
             throw new Error( `Ollama generation failed: ${ response.statusText }` );
         }
 
-        const data = await response.json();
+        if ( !response.body ) throw new Error( 'No response body' );
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let fullContent = '';
+
+        while ( true ) {
+            const { done, value } = await reader.read();
+            if ( done ) break;
+
+            const chunk = decoder.decode( value, { stream: true } );
+            const lines = chunk.split( '\n' ).filter( line => line.trim() !== '' );
+
+            for ( const line of lines ) {
+                try {
+                    const json = JSON.parse( line );
+                    if ( json.error ) throw new Error( json.error );
+                    if ( json.message && json.message.content ) {
+                        fullContent += json.message.content;
+                    }
+                } catch ( e ) {
+                    console.warn( 'Error parsing chat chunk:', e );
+                }
+            }
+        }
+
         try {
-            return JSON.parse( data.message.content );
+            return JSON.parse( fullContent );
         } catch ( e ) {
             // Try to extract JSON if the model was chatty
-            const content = data.message.content;
-            const jsonMatch = content.match( /\{[\s\S]*\}/ );
+            const jsonMatch = fullContent.match( /\{[\s\S]*\}/ );
             if ( jsonMatch ) {
                 return JSON.parse( jsonMatch[ 0 ] );
             }
