@@ -380,7 +380,7 @@ upgrade(db, oldVersion, newVersion, transaction) {
 
 ## 5. Use Cases & User Stories
 
-### 5.1 User Persona: HR Manager (Privacy-Conscious)
+### 5.1 User Persona: An unemloyed technical Privacy-Conscious person
 
 #### Use Case 1.1: Process Candidate CVs Locally
 
@@ -388,9 +388,9 @@ upgrade(db, oldVersion, newVersion, transaction) {
 
 **User Story 1.1.1: Configure Local Ollama**:
 
-- **As** an HR manager
+- **As** an unemloyed technical Privacy-Conscious person
 - **I want to** use my locally running Ollama instance
-- **So that** candidate data never leaves my infrastructure
+- **So that** I can upload and process offline CVs without using paid cloud LLMs and without requiring internet
 
 **Acceptance Criteria**:
 
@@ -409,17 +409,20 @@ upgrade(db, oldVersion, newVersion, transaction) {
 
 **User Story 1.1.2: Download Required Models**:
 
-- **As** an HR manager
+- **As** an unemloyed technical Privacy-Conscious person
 - **I want to** download AI models once
-- **So that** I can process CVs offline
+- **So that** I can upload and process CVs offline without using paid cloud LLMs and without requiring internet
 
 **Acceptance Criteria**:
 
-- Can select uninstalled embedding model
-- Can select uninstalled chat model
-- Download button only enabled for uninstalled models
-- See real-time progress (0-100%) without jumps
-- See status messages (pulling/verifying/success)
+- Can select chat models that are **Available to Download** (not available offline or not yet pulled from ollama)
+- Can select embedding models that are **Available to Download** (not available offline or not yet pulled from ollama)
+- Download button only enabled for models the are **Available to Download** (not available offline or not yet pulled from ollama)
+- See real-time progress (0-100%)
+- See status messages
+  - pulling/verifying/success
+  - total size of the model, how much have been downloaded
+  - download sped
 - Models persist across sessions
 
 **Tasks**:
@@ -432,8 +435,8 @@ upgrade(db, oldVersion, newVersion, transaction) {
 
 **User Story 1.1.3: Upload and Process CV**:
 
-- **As** an HR manager
-- **I want to** upload a candidate's CV
+- **As** an unemloyed technical Privacy-Conscious person
+- **I want to** upload my CV
 - **So that** I can extract structured information automatically
 
 **Acceptance Criteria**:
@@ -459,22 +462,25 @@ upgrade(db, oldVersion, newVersion, transaction) {
 5. Wait for 100% completion
 6. Verify document appears in accordion below
 
-### 5.2 User Persona: Startup Founder (Cost-Conscious)
+### 5.2 User Persona: An unemployed non-technical person
 
 #### Use Case 2.1: Use Browser-Based AI (No Server Required)
 
+**Goal**: Process CVs entirely in browser without technical setup or costs
+
 **User Story 2.1.1: Configure Browser Mode**:
 
-- **As** a startup founder
+- **As** an unemployed non-technical person
 - **I want to** run AI entirely in browser
-- **So that** I don't need to pay for servers or API calls
+- **So that** I don't need to install servers or pay for API calls and can process my CV without technical knowledge
 
 **Acceptance Criteria**:
 
-- Can select "Browser (Beta)" tab
-- See WebGPU requirement warning
-- See model sizes (2-4GB) before download
-- Models download once and cache locally
+- Can use browser-based LLMs without installing any additional software
+- Leverage WebGPU for AI response generation (if browser supports it)
+- See model sizes (2-4GB) and estimated download times before download
+- Models download once and cache locally in the browser
+- Works offline after initial model download
 
 **Tasks**:
 
@@ -487,9 +493,9 @@ upgrade(db, oldVersion, newVersion, transaction) {
 
 **User Story 2.1.2: Offline Processing**:
 
-- **As** a startup founder
-- **I want to** process CVs without internet
-- **So that** I can work during travel
+- **As** an unemployed non-technical person
+- **I want to** process my CV without internet
+- **So that** I can work on my CV anywhere without worrying about connectivity or data costs
 
 **Acceptance Criteria**:
 
@@ -505,22 +511,25 @@ upgrade(db, oldVersion, newVersion, transaction) {
 3. Upload CV
 4. Processing succeeds without network calls
 
-### 5.3 User Persona: Enterprise Recruiter (Quality-Focused)
+### 5.3 User Persona: A tech-savvy job seeker with access to cloud AI
 
 #### Use Case 3.1: Use Cloud AI for Best Results
 
+**Goal**: Get highest quality CV parsing using cloud-based AI models
+
 **User Story 3.1.1: Configure OpenAI API**:
 
-- **As** an enterprise recruiter
+- **As** a tech-savvy job seeker with OpenAI API access
 - **I want to** use GPT-4 for extraction
-- **So that** I get the highest quality structured data
+- **So that** I get the highest quality structured data from my CV with minimal errors
 
 **Acceptance Criteria**:
 
 - Can select "OpenAI (Cloud)" tab
-- Can enter API key securely
-- Key persists in localStorage
+- Can enter API key securely (masked input)
+- Key persists in localStorage for future sessions
 - Can select from GPT models (4o-mini, 4o, 3.5-turbo)
+- See clear instructions on how to obtain an API key
 
 **Tasks**:
 
@@ -531,30 +540,30 @@ upgrade(db, oldVersion, newVersion, transaction) {
 5. Select "gpt-4o-mini" from Chat Model dropdown
 6. Upload CV for processing
 
-**User Story 3.1.2: Bulk Processing with Export**:
+**User Story 3.1.2: Multiple Document Processing with Export**:
 
-- **As** an enterprise recruiter
-- **I want to** process multiple CVs and export results
-- **So that** I can integrate with our ATS system
+- **As** a tech-savvy job seeker
+- **I want to** process multiple versions of my CV and export results
+- **So that** I can compare different CV formats and keep a backup of extracted data
 
 **Acceptance Criteria**:
 
-- Can upload CVs sequentially (one at a time currently)
-- All documents stored in IndexedDB
-- Can export all documents to JSON file
+- Can upload CV documents sequentially (one at a time currently)
+- All documents stored in browser's IndexedDB
+- Can export all documents to JSON file for backup
 - JSON includes all fields (vectors, metadata, extracted data)
-- Can import JSON back to restore database
+- Can import JSON back to restore database on different device or browser
 
 **Tasks**:
 
-1. Upload CV 1, wait for completion
-2. Upload CV 2, wait for completion
-3. Upload CV 3, wait for completion
+1. Upload first CV version (e.g., "CV_2025_Tech.pdf"), wait for completion
+2. Upload second CV version (e.g., "CV_2025_General.docx"), wait for completion
+3. Upload third CV version (e.g., "CV_2024_Archive.pdf"), wait for completion
 4. Click "Export Data" button
-5. JSON file downloaded with all 3 documents
-6. Open in another browser, click "Import Data"
+5. JSON file downloaded with all 3 document versions
+6. Open in another browser or device, click "Import Data"
 7. Select exported JSON file
-8. All 3 documents restored
+8. All 3 CV versions restored with extracted data
 
 ### 5.4 Cross-Cutting Use Cases
 
@@ -563,24 +572,24 @@ upgrade(db, oldVersion, newVersion, transaction) {
 **User Story 4.1.1: View Stored Documents**:
 
 - **As** any user
-- **I want to** see all processed CVs
-- **So that** I can review and manage candidates
+- **I want to** see all my processed CV documents
+- **So that** I can review and manage different versions of my CV
 
 **Acceptance Criteria**:
 
-- See document count in header
+- See document count in header (e.g., "Stored Documents (3)")
 - Each document shows:
-  - File type icon (color-coded)
-  - Candidate name (from extracted data)
-  - Request ID (first 8 chars)
+  - File type icon (color-coded for PDF, DOCX, TXT, etc.)
+  - Name extracted from CV
+  - Document ID (first 8 chars)
   - Delete button
 - Can expand to see full details:
-  - Document location (filename)
+  - Original filename
   - Full name
   - Email
-  - Skills (comma-separated)
-  - Experience (formatted cards with company/dates)
-  - Vector preview (first 5 dimensions)
+  - Skills (comma-separated list)
+  - Experience (formatted cards with company/role/dates)
+  - Vector preview (first 5 dimensions for technical users)
 
 **Tasks**:
 
@@ -618,9 +627,9 @@ upgrade(db, oldVersion, newVersion, transaction) {
 
 **User Story 5.1.1: Ollama Not Running**:
 
-- **As** an HR manager
-- **I want to** see clear error if Ollama is offline
-- **So that** I know to start the service
+- **As** a user trying to use local AI
+- **I want to** see clear error messages if Ollama is not running
+- **So that** I know exactly what to do to fix the issue
 
 **Acceptance Criteria**:
 
@@ -630,9 +639,9 @@ upgrade(db, oldVersion, newVersion, transaction) {
 
 **User Story 5.1.2: Invalid OpenAI Key**:
 
-- **As** an enterprise recruiter
-- **I want to** see error if API key is wrong
-- **So that** I can correct it
+- **As** a user trying to use OpenAI
+- **I want to** see clear error messages if my API key is wrong
+- **So that** I can correct it and continue processing my CV
 
 **Acceptance Criteria**:
 
@@ -656,15 +665,15 @@ upgrade(db, oldVersion, newVersion, transaction) {
 
 ### 5.6 Advanced Features (Future)
 
-#### Use Case 6.1: Semantic :
+#### Use Case 6.1: Semantic Search
 
 **Status**: Schema ready, UI not implemented
 
 **User Story 6.1.1: Search by Skills**:
 
-- **As** a recruiter
-- **I want to** search "React developer with 5 years experience"
-- **So that** I find matching candidates using vector similarity
+- **As** a user with multiple CV versions stored
+- **I want to** search through my documents using natural language queries
+- **So that** I can quickly find which CV version emphasizes specific skills or experiences
 
 **Acceptance Criteria**:
 
@@ -677,11 +686,11 @@ upgrade(db, oldVersion, newVersion, transaction) {
 
 **Status**: Planned
 
-**User Story 6.2.1: Upload JD and Match**:
+**User Story 6.2.1: Match CV to Job Description**:
 
-- **As** a recruiter
-- **I want to** paste a job description
-- **So that** candidates are ranked by fit
+- **As** a job seeker
+- **I want to** paste a job description and compare it with my CV
+- **So that** I can see how well my CV matches the job requirements and which version is best suited
 
 **Acceptance Criteria**:
 
@@ -692,7 +701,7 @@ upgrade(db, oldVersion, newVersion, transaction) {
 
 ## 6. Technical Requirements
 
-### 6.1 Performance Requirements:
+### 6.1 Performance Requirements
 
 - **Model Loading**: Should complete within 60s for browser models (4GB)
 - **Document Processing**: Should complete within 10s for typical CV
