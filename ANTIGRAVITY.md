@@ -349,6 +349,45 @@ curl http://localhost:11434/api/generate -d '{
 - ✅ Fixed provider switching not updating model lists
 - ✅ Fixed WebLLM engine not releasing GPU properly (added reload pattern)
 
+## UI Testing Process
+
+### Automated Testing Setup
+1. **Check Running Processes**: Verify if any process is running on backend (port 3000) and frontend (port 4200) ports. If running, kill them.
+   ```powershell
+   # Check for processes on ports
+   Get-NetTCPConnection -LocalPort 3000,4200 -ErrorAction SilentlyContinue
+   
+   # Kill processes if found
+   Get-Process -Id (Get-NetTCPConnection -LocalPort 3000).OwningProcess | Stop-Process -Force
+   Get-Process -Id (Get-NetTCPConnection -LocalPort 4200).OwningProcess | Stop-Process -Force
+   ```
+
+2. **Build and Run**: Start both frontend and backend servers
+   ```powershell
+   # Terminal 1: Backend
+   cd cv-parser-backend
+   npm start
+   
+   # Terminal 2: Frontend
+   cd cv-parser
+   npm start
+   ```
+
+3. **Browser Management**: Check and manage Chrome browser state
+   - **If Chrome is already opened:**
+     - Check the currently selected tab
+     - If it's our frontend (http://localhost:4200), refresh it
+     - If not, check all tabs for the app URL
+     - If found in another tab, select and refresh it
+     - If not found in any tab, open a new tab with the app URL
+   - **If Chrome is not opened:**
+     - Open Chrome and navigate to http://localhost:4200
+
+4. **Execute Test Cases**: Follow user instructions for specific use case testing (see scenarios below)
+
+### Manual Testing Scenarios
+See "Common Error Messages" and "Recent Fixes" sections for validation checkpoints.
+
 ## Known Limitations
 - **Single File Upload**: Must process files sequentially (no batch upload yet)
 - **No Search UI**: Vector storage ready, but semantic search interface not implemented
