@@ -1,0 +1,38 @@
+# Cursor Project Rules (.cursorrules)
+
+## Project Context
+- **Name**: CV Parser
+- **Framework**: Angular (Standalone Components)
+- **Backend**: Node.js Express
+- **Style**: Inline CSS (current pattern), Functional Services
+
+## Coding Conventions
+
+### Angular
+- Use **Standalone Components** (`standalone: true`).
+- Use **Promises** (`async/await`) over Observables for one-off async operations (parsing, API calls).
+- Inject services via constructor.
+- Template: Keep logic minimal, use helper methods in class.
+
+### Backend
+- Use **CommonJS** (`require`).
+- **MCP Pattern**: Implement AI tools using `@modelcontextprotocol/sdk`.
+- **Proxy Pattern**: Always proxy external API calls (HF, OpenAI) through the backend.
+
+### File Structure
+- `src/app/services/`: All business logic (Embedding, Storage, Parsing).
+- `src/app/app.component.ts`: Main UI and Workflow orchestration.
+- `server.js`: Main backend entry point.
+- `mcp-server.js`: AI Extraction logic.
+
+### UI/UX Standards
+- **Icons**: Use inline SVGs for file types.
+- **Colors**:
+  - PDF: `#dc3545`
+  - DOCX: `#007bff`
+  - TXT: `#6c757d`
+  - JSON: `#ffc107`
+- **Progress Bar**: Must be expandable and hideable.
+
+## Critical Workflows
+- **File Processing**: `onFileSelected` in `AppComponent` is the core pipeline. Do not break the sequence: Upload -> Parse -> Extract -> Vectorize -> Store.

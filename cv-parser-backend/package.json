@@ -1,0 +1,17 @@
+{
+    "name": "cv-parser-backend",
+    "version": "1.0.0",
+    "description": "Backend proxy for CV Parser models",
+    "main": "server.js",
+    "scripts": {
+        "start": "node server.js"
+    },
+    "dependencies": {
+        "@modelcontextprotocol/sdk": "^1.24.2",
+        "cors": "^2.8.5",
+        "express": "^4.18.2",
+        "multer": "^2.0.2",
+        "node-fetch": "^2.7.0",
+        "zod": "^4.1.13"
+    }
+}
