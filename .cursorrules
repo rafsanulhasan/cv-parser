@@ -1,38 +1,123 @@
-# Cursor Project Rules (.cursorrules)
+# .cursorrules - CV Parser
 
-## Project Context
-- **Name**: CV Parser
-- **Framework**: Angular (Standalone Components)
-- **Backend**: Node.js Express
-- **Style**: Inline CSS (current pattern), Functional Services
+> **📖 Master Reference:** See [ARCHITECTURE.md](./ARCHITECTURE.md) for complete implementation details.
 
-## Coding Conventions
+## Quick Reference
 
-### Angular
-- Use **Standalone Components** (`standalone: true`).
-- Use **Promises** (`async/await`) over Observables for one-off async operations (parsing, API calls).
-- Inject services via constructor.
-- Template: Keep logic minimal, use helper methods in class.
+**Tech Stack:** Angular 17 | Node.js/Express | Multi-Provider AI (Browser/Ollama/OpenAI) | IndexedDB  
+**File Formats:** PDF, DOCX, TXT, MD, JSON  
+**Key Services:** ModelRegistry, Ollama, OpenAI, Embedding, LocalExtraction, Storage, FileParsing
 
-### Backend
-- Use **CommonJS** (`require`).
-- **MCP Pattern**: Implement AI tools using `@modelcontextprotocol/sdk`.
-- **Proxy Pattern**: Always proxy external API calls (HF, OpenAI) through the backend.
+## Core Rules
 
-### File Structure
-- `src/app/services/`: All business logic (Embedding, Storage, Parsing).
-- `src/app/app.component.ts`: Main UI and Workflow orchestration.
-- `server.js`: Main backend entry point.
-- `mcp-server.js`: AI Extraction logic.
+## Core Rules
 
-### UI/UX Standards
-- **Icons**: Use inline SVGs for file types.
-- **Colors**:
-  - PDF: `#dc3545`
-  - DOCX: `#007bff`
-  - TXT: `#6c757d`
-  - JSON: `#ffc107`
-- **Progress Bar**: Must be expandable and hideable.
+### 1. Multi-Provider Architecture
+```typescript
+// ALWAYS check provider before delegating
+const provider = this.modelRegistry['selectedProviderSubject'].value;
 
-## Critical Workflows
-- **File Processing**: `onFileSelected` in `AppComponent` is the core pipeline. Do not break the sequence: Upload -> Parse -> Extract -> Vectorize -> Store.
+if (provider === 'ollama') {
+  return this.ollamaService.method();
+} else if (provider === 'browser') {
+  return this.browserMethod();
+} else if (provider === 'openai') {
+  return this.openAIService.method();
+}
+```
+
+### 2. Ollama Multi-Layer Downloads
+```typescript
+// REQUIRED: Track progress per digest
+const digestProgress = new Map<string, number>();
+
+for await (const _ of ollamaService.pullModel(modelId, 
+  (completed, total, digest, status) => {
+    if (digest) digestProgress.set(digest, completed);
+    const totalDownloaded = Array.from(digestProgress.values()).reduce((a,b) => a+b, 0);
+    const percent = Math.min(100, Math.round((totalDownloaded / (total * digestProgress.size)) * 100));
+  }
+)) {}
+```
+
+### 3. WebLLM Engine Lifecycle
+```typescript
+// ALWAYS try reload before recreate
+if (this.engine) {
+  try {
+    await this.engine.reload(modelId);
+    return;
+  } catch {
+    await this.engine.unload();
+    this.engine = null;
+    await new Promise(r => setTimeout(r, 500)); // GPU reset
+  }
+}
+this.engine = await CreateMLCEngine(modelId, { initProgressCallback });
+```
+
+### 4. IndexedDB
+- **Database:** `ai-vector-db` (version 4)
+- **Store:** `documents` (keyPath: `requestId`)
+- **Upgrade:** Drop and recreate (data loss acceptable for dev)
+
+### 5. Angular
+- Standalone Components with explicit imports
+- RxJS BehaviorSubjects for state
+- Inline templates and styles
+- Step-level error tracking
+
+### 6. UI/UX
+- Max-width 800px, centered
+- File colors: PDF(red), DOCX(blue), TXT(gray), MD(purple), JSON(green)
+- Provider tabs: Browser | Ollama | OpenAI
+- Model grouping: Installed vs Available
+
+### 7. State Persistence
+localStorage: `selectedProvider`, `selectedEmbeddingModel`, `selectedChatModel`, `openaiApiKey`, `ollamaApiUrl`, `ollamaApiKey`
+
+### 8. Backend
+- `/models/*` - HF proxy with auth
+- `/upload` - Multer to `uploads/`
+- `/extract` - MCP server (OpenAI gpt-4o-mini)
+- Transformers.js: `env.remoteHost = 'http://localhost:3000/models/'`
+
+### 9. Error Handling
+- Graceful degradation per provider
+- Step-level error icons (✗)
+- Console logging for debugging
+- User-friendly messages
+
+### 10. Code Style
+- TypeScript strict typing
+- 2 spaces, semicolons
+- Descriptive names
+- Comment complex logic
+
+## Common Tasks
+
+**Add Provider:**
+1. Create service with `generate()` and `getEmbeddings()`
+2. Add to `ModelProvider` type
+3. Update Embedding/Extraction services
+4. Add UI tab + config inputs
+
+**Add File Format:**
+1. Update `FileParsingService.parseFile()` switch
+2. Implement parser method
+3. Update `getFileColor()`
+4. Add to file input `accept`
+
+**Modify Schema:**
+1. Update prompt in `LocalExtractionService`
+2. Update UI template
+3. Consider IndexedDB version bump
+
+## Development
+```bash
+cd cv-parser && npm start          # Frontend :4200
+cd cv-parser-backend && npm start  # Backend :3000
+ollama serve                        # Ollama mode
+```
+
+**Reference:** See [ARCHITECTURE.md](./ARCHITECTURE.md) for complete documentation.
