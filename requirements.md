@@ -769,3 +769,43 @@ upgrade(db, oldVersion, newVersion, transaction) {
   - Real-time collaboration features
   - ATS integration plugins
   - Custom extraction templates
+
+### 5.7 UI Refinements
+
+#### Use Case 7.1: Model Configuration Order
+
+**User Story 7.1.1: Chat Model First**:
+
+- **As** a user
+- **I want** the "Chat Model" configuration to be displayed before the "Embedding Model" configuration within the "Model Configuration" panel
+- **So that** the order is more intuitive, as the chat model is often configured before the embedding model in typical workflows
+
+**Acceptance Criteria**:
+
+- When the "Model Configuration" panel is expanded, the "Chat Model (Data Extraction)" section and its controls appear above the "Embedding Model (Vector Search)" section.
+
+**Tasks**:
+
+- [x] Modify the HTML template to reorder the model sections.
+- [x] Verify the change in the browser.
+
+#### Use Case 7.2: Clean Model Configuration UI
+
+**User Story 7.2.1: Simplified Labels and Layout**:
+
+- **As** a user
+- **I want** a clean and uncluttered configuration panel
+- **So that** I can easily scan and select models without distraction
+
+**Acceptance Criteria**:
+
+- "Chat Model" label does not contain "(Data Extraction)".
+- "Embedding Model" label does not contain "(Vector Search)".
+- Helper text "Used to convert text into vectors..." is removed.
+- "Ensure Ollama is running..." note is moved to the bottom of the panel.
+
+**Tasks**:
+
+- [x] Update `app.component.ts` to move Ollama note to bottom.
+- [x] Update `app.component.ts` to remove label suffixes and helper text.
+- [x] Verify changes with browser test.

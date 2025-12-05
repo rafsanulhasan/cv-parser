@@ -61,62 +61,7 @@ interface ProgressStep {
 
           <div>
             <div style="margin-bottom: 15px;">
-              <label style="display: block; font-weight: bold; margin-bottom: 5px;">Embedding Model (Vector Search)</label>
-              <div style="display: flex; gap: 10px;">
-                  <select [ngModel]="selectedEmbeddingModelId" (ngModelChange)="onEmbeddingModelChange($event)" [disabled]="isPullingEmbedding" style="flex: 1; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
-                    <ng-container *ngIf="selectedProvider === 'ollama'; else simpleEmbedding">
-                        <optgroup label="Installed Models (Ready)">
-                            <option *ngFor="let model of getInstalledModels(embeddingModels)" [value]="model.id">
-                                {{ model.name }} ({{ model.size }})
-                            </option>
-                        </optgroup>
-                        <optgroup label="Available to Download">
-                            <option *ngFor="let model of getCloudModels(embeddingModels)" [value]="model.id">
-                                {{ model.name }}
-                            </option>
-                        </optgroup>
-                    </ng-container>
-                    <ng-template #simpleEmbedding>
-                        <option *ngFor="let model of embeddingModels" [value]="model.id">
-                            {{ model.name }} ({{ model.size }}) <span *ngIf="model.cached">✅ Cached</span>
-                        </option>
-                    </ng-template>
-                  </select>
-                  <button *ngIf="selectedProvider === 'ollama'" 
-                          (click)="downloadEmbeddingModel()" 
-                          [disabled]="!selectedEmbeddingModelId || isPullingEmbedding || isModelInstalled(selectedEmbeddingModelId, embeddingModels)"
-                          [style.opacity]="(!selectedEmbeddingModelId || isPullingEmbedding || isModelInstalled(selectedEmbeddingModelId, embeddingModels)) ? 0.5 : 1"
-                          style="padding: 8px 15px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap;">
-                      {{ isPullingEmbedding ? 'Downloading...' : 'Download' }}
-                  </button>
-                  <button *ngIf="selectedProvider === 'ollama'" 
-                          (click)="deleteEmbeddingModel()" 
-                          [disabled]="!selectedEmbeddingModelId || isPullingEmbedding || !isModelInstalled(selectedEmbeddingModelId, embeddingModels)"
-                          [style.opacity]="(!selectedEmbeddingModelId || isPullingEmbedding || !isModelInstalled(selectedEmbeddingModelId, embeddingModels)) ? 0.5 : 1"
-                          style="padding: 8px 15px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap; margin-left: 5px;">
-                      {{ confirmingEmbeddingDelete ? 'Confirm?' : 'Delete' }}
-                  </button>
-              </div>
-              
-              <!-- Embedding Progress -->
-              <div *ngIf="isPullingEmbedding" style="margin-top: 10px; padding: 10px; background: #e2e3e5; border-radius: 4px;">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                    <strong>{{ embeddingPullProgress.status.startsWith('Deleting') ? 'Deleting...' : 'Downloading...' }}</strong>
-                    <span>{{ embeddingPullProgress.percent }}%</span>
-                </div>
-                <div style="height: 10px; background: #fff; border-radius: 5px; overflow: hidden;">
-                    <div [style.width.%]="embeddingPullProgress.percent" style="height: 100%; background: #007bff; transition: width 0.3s ease;"></div>
-                </div>
-                <p style="margin: 5px 0 0; font-size: 0.8em; color: #666; text-align: center;">{{ embeddingPullProgress.status }}</p>
-              </div>
-
-              <p style="margin: 5px 0 0; font-size: 0.8em; color: #666;">
-                Used to convert text into vectors for search. Runs in browser.
-              </p>
-            </div>
-
-            <div style="margin-bottom: 15px;">
-              <label style="display: block; font-weight: bold; margin-bottom: 5px;">Chat Model (Data Extraction)</label>
+              <label style="display: block; font-weight: bold; margin-bottom: 5px;">Chat Model</label>
               <div style="display: flex; gap: 10px;">
                   <select [ngModel]="selectedChatModelId" (ngModelChange)="onChatModelChange($event)" [disabled]="isPullingChat" style="flex: 1; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
                     <ng-container *ngIf="selectedProvider === 'ollama'; else simpleChat">
@@ -168,10 +113,62 @@ interface ProgressStep {
               <p *ngIf="selectedProvider === 'browser'" style="margin: 5px 0 0; font-size: 0.8em; color: #dc3545;">
                 Note: Browser models require WebGPU and will download ~2-4GB of data.
               </p>
-              <p *ngIf="selectedProvider === 'ollama'" style="margin: 5px 0 0; font-size: 0.8em; color: #17a2b8;">
-                Note: Ensure Ollama is running ('ollama serve'). Models are fetched from your local installation.
-              </p>
             </div>
+
+            <div style="margin-bottom: 15px;">
+              <label style="display: block; font-weight: bold; margin-bottom: 5px;">Embedding Model</label>
+              <div style="display: flex; gap: 10px;">
+                  <select [ngModel]="selectedEmbeddingModelId" (ngModelChange)="onEmbeddingModelChange($event)" [disabled]="isPullingEmbedding" style="flex: 1; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
+                    <ng-container *ngIf="selectedProvider === 'ollama'; else simpleEmbedding">
+                        <optgroup label="Installed Models (Ready)">
+                            <option *ngFor="let model of getInstalledModels(embeddingModels)" [value]="model.id">
+                                {{ model.name }} ({{ model.size }})
+                            </option>
+                        </optgroup>
+                        <optgroup label="Available to Download">
+                            <option *ngFor="let model of getCloudModels(embeddingModels)" [value]="model.id">
+                                {{ model.name }}
+                            </option>
+                        </optgroup>
+                    </ng-container>
+                    <ng-template #simpleEmbedding>
+                        <option *ngFor="let model of embeddingModels" [value]="model.id">
+                            {{ model.name }} ({{ model.size }}) <span *ngIf="model.cached">✅ Cached</span>
+                        </option>
+                    </ng-template>
+                  </select>
+                  <button *ngIf="selectedProvider === 'ollama'" 
+                          (click)="downloadEmbeddingModel()" 
+                          [disabled]="!selectedEmbeddingModelId || isPullingEmbedding || isModelInstalled(selectedEmbeddingModelId, embeddingModels)"
+                          [style.opacity]="(!selectedEmbeddingModelId || isPullingEmbedding || isModelInstalled(selectedEmbeddingModelId, embeddingModels)) ? 0.5 : 1"
+                          style="padding: 8px 15px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap;">
+                      {{ isPullingEmbedding ? 'Downloading...' : 'Download' }}
+                  </button>
+                  <button *ngIf="selectedProvider === 'ollama'" 
+                          (click)="deleteEmbeddingModel()" 
+                          [disabled]="!selectedEmbeddingModelId || isPullingEmbedding || !isModelInstalled(selectedEmbeddingModelId, embeddingModels)"
+                          [style.opacity]="(!selectedEmbeddingModelId || isPullingEmbedding || !isModelInstalled(selectedEmbeddingModelId, embeddingModels)) ? 0.5 : 1"
+                          style="padding: 8px 15px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap; margin-left: 5px;">
+                      {{ confirmingEmbeddingDelete ? 'Confirm?' : 'Delete' }}
+                  </button>
+              </div>
+              
+              <!-- Embedding Progress -->
+              <div *ngIf="isPullingEmbedding" style="margin-top: 10px; padding: 10px; background: #e2e3e5; border-radius: 4px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <strong>{{ embeddingPullProgress.status.startsWith('Deleting') ? 'Deleting...' : 'Downloading...' }}</strong>
+                    <span>{{ embeddingPullProgress.percent }}%</span>
+                </div>
+                <div style="height: 10px; background: #fff; border-radius: 5px; overflow: hidden;">
+                    <div [style.width.%]="embeddingPullProgress.percent" style="height: 100%; background: #007bff; transition: width 0.3s ease;"></div>
+                </div>
+                <p style="margin: 5px 0 0; font-size: 0.8em; color: #666; text-align: center;">{{ embeddingPullProgress.status }}</p>
+              </div>
+            </div>
+
+            <p *ngIf="selectedProvider === 'ollama'" style="margin: 5px 0 0; font-size: 0.8em; color: #17a2b8;">
+                Note: Ensure Ollama is running ('ollama serve'). Models are fetched from your local installation.
+            </p>
           </div>
 
         </div>
