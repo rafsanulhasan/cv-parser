@@ -20,8 +20,8 @@ Multi-provider CV analysis tool. Angular 17 frontend, Node.js backend, three AI 
 ```typescript
 const digestProgress = new Map<string, number>();
 
-for await (const _ of this.ollamaService.pullModel(modelId, 
-  (completed, total, digest, status) => {
+await this.ollamaService.pullModel(modelId, 
+  (status, completed, total, digest) => {
     if (digest) {
       // Store progress for this specific layer
       digestProgress.set(digest, completed);
@@ -47,7 +47,7 @@ for await (const _ of this.ollamaService.pullModel(modelId,
       this.embeddingPullProgress.percent = 100;
     }
   }
-)) {}
+);
 ```
 
 **Critical Requirements**:

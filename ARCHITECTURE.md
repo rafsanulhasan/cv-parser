@@ -98,17 +98,17 @@ setOpenAIKey(key: string): void
 
 **Critical Method - pullModel:**
 ```typescript
-async *pullModel(
+async pullModel(
   modelName: string, 
-  progressCallback: (completed: number, total: number, digest?: string, status?: string) => void
-): AsyncGenerator<void>
+  progressCallback: (status: string, completed: number, total: number, digest?: string) => void
+): Promise<void>
 ```
 
 **Progress Callback Parameters:**
+- `status` - "pulling" | "verifying" | "writing manifest" | "success"
 - `completed` - Bytes downloaded for current layer
 - `total` - Total bytes for current layer
 - `digest` - Layer identifier (SHA256 hash) - **CRITICAL for multi-layer tracking**
-- `status` - "pulling" | "verifying" | "writing manifest" | "success"
 
 **Configuration:**
 ```typescript
@@ -424,8 +424,8 @@ try {
 // In AppComponent.downloadEmbeddingModel() or downloadChatModel()
 const digestProgress = new Map<string, number>();
 
-for await (const _ of this.ollamaService.pullModel(modelId, 
-  (completed, total, digest, status) => {
+await this.ollamaService.pullModel(modelId, 
+  (status, completed, total, digest) => {
     if (digest) {
       // Store cumulative progress for this specific layer
       digestProgress.set(digest, completed);
@@ -452,9 +452,7 @@ for await (const _ of this.ollamaService.pullModel(modelId,
       this.embeddingPullProgress.percent = 100;
     }
   }
-)) {
-  // Generator yields on each progress update
-}
+);
 ```
 
 **Status Handling:**
