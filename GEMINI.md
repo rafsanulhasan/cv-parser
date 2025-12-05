@@ -4,16 +4,19 @@
 > **🎯 This Document:** Critical gotchas, debugging tips, and known issues.
 
 ## Project Overview
+
 Multi-provider CV analysis tool. Angular 17 frontend, Node.js backend, three AI modes: Browser (WebLLM/Transformers.js), Ollama (Local), OpenAI (Cloud).
 
 ## Critical "Gotchas"
 
 ### 1. Ollama Multi-Layer Downloads
+
 **Problem**: Models download in layers (blobs). Each layer reports progress from 0-100%. Naively using `completed/total` causes progress bar to jump back to 0% for each new layer.
 
 **Solution**: Track progress per `digest` (layer identifier), aggregate across all layers.
 
 **Reference Implementation** (`AppComponent.downloadEmbeddingModel()` and `AppComponent.downloadChatModel()`):
+
 ```typescript
 const digestProgress = new Map<string, number>();
 
@@ -48,17 +51,20 @@ for await (const _ of this.ollamaService.pullModel(modelId,
 ```
 
 **Critical Requirements**:
+
 - `OllamaService.pullModel()` MUST pass `digest` to callback
 - Maintain Map<string, number> for layer tracking
 - Handle status states: "pulling", "verifying", "writing manifest", "success"
 - Force 100% when verifying/writing manifest (total may be undefined)
 
 ### 2. WebLLM Engine State Management
+
 **Problem**: GPU state persists between model loads. Direct engine recreation can fail or leak GPU memory.
 
 **Solution**: Try reload first, recreate only on failure, add delay after unload.
 
 **Pattern** (`LocalExtractionService.initialize()`):
+
 ```typescript
 if (this.engine) {
   try {
@@ -80,6 +86,7 @@ this.engine = await CreateMLCEngine(modelId, { initProgressCallback });
 ```
 
 **Best Practices**:
+
 - Always try `reload()` before creating new engine
 - Catch reload errors separately from creation errors
 - Add 500ms delay after `unload()` before creating new engine
@@ -87,9 +94,11 @@ this.engine = await CreateMLCEngine(modelId, { initProgressCallback });
 - Wire progress callbacks for UI feedback
 
 ### 3. IndexedDB Schema Upgrades
+
 **Problem**: Schema changes require careful migration. Version bumps trigger upgrade callback.
 
 **Current Approach** (`StorageService`):
+
 ```typescript
 openDB<VectorDB>('ai-vector-db', 4, {
   upgrade(db, oldVersion, newVersion, transaction) {
@@ -107,12 +116,14 @@ openDB<VectorDB>('ai-vector-db', 4, {
 ```
 
 **Trade-offs**:
+
 - **Pro**: Simple, ensures schema consistency
 - **Con**: Data loss on every version upgrade
 - **Status**: Acceptable for demo/dev phase
 - **Future**: Implement data migration logic before production
 
 **Schema** (version 4):
+
 ```typescript
 {
   requestId: string;        // UUID v4
@@ -126,11 +137,13 @@ openDB<VectorDB>('ai-vector-db', 4, {
 ```
 
 ### 4. Transformers.js CORS & Authentication
+
 **Problem**: Direct Hugging Face requests fail due to CORS policy and missing authentication.
 
 **Solution**: Backend proxy adds auth header and enables CORS.
 
 **Frontend Config** (`embedding.service.ts`):
+
 ```typescript
 import { env } from '@xenova/transformers';
 env.allowLocalModels = false;
@@ -138,6 +151,7 @@ env.remoteHost = 'http://localhost:3000/models/';
 ```
 
 **Backend Proxy** (`server.js`):
+
 ```javascript
 app.get('/models/*', async (req, res) => {
   const modelPath = req.params[0];
@@ -155,17 +169,20 @@ app.get('/models/*', async (req, res) => {
 ```
 
 **Request Flow**:
+
 1. Transformers.js: `/Xenova/all-MiniLM-L6-v2/resolve/main/tokenizer.json`
 2. Backend proxies to: `https://huggingface.co/Xenova/all-MiniLM-L6-v2/resolve/main/tokenizer.json`
 3. Backend adds: `Authorization: Bearer <token>`
 4. Response streamed back to client
 
 ### 5. Provider State Synchronization
+
 **Problem**: Model selections must sync across services and persist across sessions.
 
 **Solution**: `ModelRegistryService` as single source of truth with localStorage persistence.
 
 **Keys Persisted**:
+
 - `selectedProvider` → 'browser' | 'ollama' | 'openai'
 - `selectedEmbeddingModel` → Model ID string
 - `selectedChatModel` → Model ID string
@@ -174,6 +191,7 @@ app.get('/models/*', async (req, res) => {
 - `ollamaApiKey` → API key (if configured)
 
 **Pattern**:
+
 ```typescript
 // Service accesses via internal subject
 const provider = this.modelRegistry['selectedProviderSubject'].value;
@@ -185,11 +203,13 @@ this.modelRegistry.selectedProvider$.subscribe(provider => {
 ```
 
 ### 6. Progress Callback Performance
+
 **Problem**: High-frequency callbacks (100ms intervals) can freeze UI during large model downloads.
 
 **Solution**: Debounce updates, batch DOM changes, cap percentages.
 
 **Pattern**:
+
 ```typescript
 // Cap percentage to avoid >100% display
 const percent = Math.min(100, Math.round((completed / total) * 100));
@@ -201,11 +221,13 @@ this.embeddingPullProgress = { percent, status, completed, total };
 ```
 
 ### 7. File Type Detection & Icon Rendering
+
 **Problem**: Must detect file type from extension and render color-coded icons dynamically.
 
 **Solution**: SVG template with `[attr.fill]` binding and color map function.
 
 **Implementation** (`AppComponent`):
+
 ```typescript
 getFileColor(fileType: string): string {
   const colors: { [key: string]: string } = {
@@ -220,6 +242,7 @@ getFileColor(fileType: string): string {
 ```
 
 **Template**:
+
 ```html
 <rect x="4" y="18" width="24" height="10" rx="2" 
       [attr.fill]="getFileColor(doc.fileType)"/>
@@ -230,11 +253,13 @@ getFileColor(fileType: string): string {
 ```
 
 ### 8. Async Pipeline Error Recovery
+
 **Problem**: If any step fails, should show error but not block subsequent attempts.
 
 **Solution**: Step-level error tracking with independent status.
 
 **Pattern** (`AppComponent.onFileSelected()`):
+
 ```typescript
 try {
   this.updateStepStatus('Parsing File', 'loading');
@@ -249,17 +274,20 @@ try {
 ```
 
 **Status Icons**:
+
 - ○ Pending (gray)
 - ⏳ Loading (animated)
 - ✓ Completed (green)
 - ✗ Error (red)
 
 ### 9. Model Library Dynamic Updates
+
 **Problem**: Ollama model library changes as user installs/removes models.
 
 **Solution**: Refresh button fetches latest, merges with static recommendations.
 
 **Logic** (`ModelRegistryService.updateOllamaModels()`):
+
 1. Fetch installed models via `/api/tags`
 2. Fetch recommended models via backend proxy
 3. Merge: Installed models marked `isInstalled: true`
@@ -267,6 +295,7 @@ try {
 5. Group in UI: "Installed Models (Ready)" vs "Available to Download"
 
 **UI Pattern**:
+
 ```html
 <optgroup label="Installed Models (Ready)">
   <option *ngFor="let model of getInstalledModels(models)" [value]="model.id">
@@ -281,11 +310,13 @@ try {
 ```
 
 ### 10. Export/Import Data Integrity
+
 **Problem**: Must preserve all fields including vectors when exporting/importing.
 
 **Solution**: Full document serialization via `JSON.stringify()`, batch import with transaction.
 
 **Export** (`AppComponent.exportData()`):
+
 ```typescript
 const dataStr = JSON.stringify(this.documents, null, 2);
 const blob = new Blob([dataStr], { type: 'application/json' });
@@ -293,6 +324,7 @@ const blob = new Blob([dataStr], { type: 'application/json' });
 ```
 
 **Import** (`AppComponent.importData()`):
+
 ```typescript
 const data = JSON.parse(reader.result as string);
 await this.storageService.importDocuments(data);
@@ -300,6 +332,7 @@ this.documents = await this.storageService.getAllDocuments();
 ```
 
 **Transaction Safety** (`StorageService.importDocuments()`):
+
 ```typescript
 const tx = db.transaction('documents', 'readwrite');
 const store = tx.objectStore('documents');
@@ -314,12 +347,14 @@ await tx.done; // Commit transaction
 ## Debugging Tips
 
 ### Browser DevTools
+
 - **Application → IndexedDB**: Inspect `ai-vector-db`, verify schema version and data
 - **Network**: Monitor Ollama API calls, check for 404/500 errors
 - **Console**: Filter by service name (e.g., "OllamaService") to trace execution
 - **Performance**: Profile model loading, identify bottlenecks
 
 ### Ollama Debugging
+
 ```bash
 # Check if Ollama is running
 curl http://localhost:11434/api/tags
@@ -336,6 +371,7 @@ curl http://localhost:11434/api/generate -d '{
 ```
 
 ### Common Error Messages
+
 1. **"Failed to fetch Ollama models"** → Start `ollama serve`
 2. **"Model not initialized"** → Check provider selection, verify model loaded
 3. **"WebGPU not available"** → Browser incompatibility (need Chrome 113+)
@@ -343,6 +379,7 @@ curl http://localhost:11434/api/generate -d '{
 5. **"Quota exceeded"** → IndexedDB storage limit, clear old documents
 
 ## Recent Fixes
+
 - ✅ Fixed "Download" button visibility (removed duplicate HTML elements)
 - ✅ Fixed Progress Bar glitching (implemented multi-layer digest tracking)
 - ✅ Fixed IndexedDB schema mismatch (bumped version to 4, added fileType field)
@@ -352,7 +389,9 @@ curl http://localhost:11434/api/generate -d '{
 ## UI Testing Process
 
 ### Automated Testing Setup
+
 1. **Check Running Processes**: Verify if any process is running on backend (port 3000) and frontend (port 4200) ports. If running, kill them.
+
    ```powershell
    # Check for processes on ports
    Get-NetTCPConnection -LocalPort 3000,4200 -ErrorAction SilentlyContinue
@@ -363,6 +402,7 @@ curl http://localhost:11434/api/generate -d '{
    ```
 
 2. **Build and Run**: Start both frontend and backend servers
+
    ```powershell
    # Terminal 1: Backend
    cd cv-parser-backend
@@ -386,9 +426,11 @@ curl http://localhost:11434/api/generate -d '{
 4. **Execute Test Cases**: Follow user instructions for specific use case testing (see scenarios below)
 
 ### Manual Testing Scenarios
+
 See "Common Error Messages" and "Recent Fixes" sections for validation checkpoints.
 
 ## Known Limitations
+
 - **Single File Upload**: Must process files sequentially (no batch upload yet)
 - **No Search UI**: Vector storage ready, but semantic search interface not implemented
 - **Memory Usage**: Large models (4GB+) may cause issues on low-memory devices
