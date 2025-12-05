@@ -82,23 +82,23 @@ interface ProgressStep {
                         </option>
                     </ng-template>
                   </select>
-                  <button *ngIf="selectedProvider === 'ollama' && !isPullingChat" 
+                  <button *ngIf="selectedProvider === 'ollama' && !isPullingChat && !isModelInstalled(selectedChatModelId, availableChatModels)" 
                           (click)="downloadChatModel()" 
-                          [disabled]="!selectedChatModelId || isModelInstalled(selectedChatModelId, availableChatModels)"
-                          [style.opacity]="(!selectedChatModelId || isModelInstalled(selectedChatModelId, availableChatModels)) ? 0.5 : 1"
-                          style="padding: 8px 15px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap;">
+                          [disabled]="!selectedChatModelId"
+                          [style.opacity]="(!selectedChatModelId) ? 0.5 : 1"
+                          style="width: 100px; padding: 8px 0; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap; text-align: center; display: flex; justify-content: center; align-items: center;">
                       Download
                   </button>
                   <button *ngIf="selectedProvider === 'ollama' && isPullingChat" 
                           (click)="cancelChatPull()" 
-                          style="padding: 8px 15px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap;">
+                          style="width: 100px; padding: 8px 0; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap; text-align: center; display: flex; justify-content: center; align-items: center;">
                       Cancel
                   </button>
-                  <button *ngIf="selectedProvider === 'ollama' && !isPullingChat" 
+                  <button *ngIf="selectedProvider === 'ollama' && !isPullingChat && isModelInstalled(selectedChatModelId, availableChatModels)" 
                           (click)="deleteChatModel()" 
-                          [disabled]="!selectedChatModelId || !isModelInstalled(selectedChatModelId, availableChatModels)"
-                          [style.opacity]="(!selectedChatModelId || !isModelInstalled(selectedChatModelId, availableChatModels)) ? 0.5 : 1"
-                          style="padding: 8px 15px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap; margin-left: 5px;">
+                          [disabled]="!selectedChatModelId"
+                          [style.opacity]="(!selectedChatModelId) ? 0.5 : 1"
+                          style="width: 100px; padding: 8px 0; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap; text-align: center; display: flex; justify-content: center; align-items: center;">
                       {{ confirmingChatDelete ? 'Confirm?' : 'Delete' }}
                   </button>
               </div>
@@ -142,23 +142,23 @@ interface ProgressStep {
                         </option>
                     </ng-template>
                   </select>
-                  <button *ngIf="selectedProvider === 'ollama' && !isPullingEmbedding" 
+                  <button *ngIf="selectedProvider === 'ollama' && !isPullingEmbedding && !isModelInstalled(selectedEmbeddingModelId, embeddingModels)" 
                           (click)="downloadEmbeddingModel()" 
-                          [disabled]="!selectedEmbeddingModelId || isModelInstalled(selectedEmbeddingModelId, embeddingModels)"
-                          [style.opacity]="(!selectedEmbeddingModelId || isModelInstalled(selectedEmbeddingModelId, embeddingModels)) ? 0.5 : 1"
-                          style="padding: 8px 15px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap;">
+                          [disabled]="!selectedEmbeddingModelId"
+                          [style.opacity]="(!selectedEmbeddingModelId) ? 0.5 : 1"
+                          style="width: 100px; padding: 8px 0; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap; text-align: center; display: flex; justify-content: center; align-items: center;">
                       Download
                   </button>
                   <button *ngIf="selectedProvider === 'ollama' && isPullingEmbedding" 
                           (click)="cancelEmbeddingPull()" 
-                          style="padding: 8px 15px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap;">
+                          style="width: 100px; padding: 8px 0; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap; text-align: center; display: flex; justify-content: center; align-items: center;">
                       Cancel
                   </button>
-                  <button *ngIf="selectedProvider === 'ollama' && !isPullingEmbedding" 
+                  <button *ngIf="selectedProvider === 'ollama' && !isPullingEmbedding && isModelInstalled(selectedEmbeddingModelId, embeddingModels)" 
                           (click)="deleteEmbeddingModel()" 
-                          [disabled]="!selectedEmbeddingModelId || !isModelInstalled(selectedEmbeddingModelId, embeddingModels)"
-                          [style.opacity]="(!selectedEmbeddingModelId || !isModelInstalled(selectedEmbeddingModelId, embeddingModels)) ? 0.5 : 1"
-                          style="padding: 8px 15px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap; margin-left: 5px;">
+                          [disabled]="!selectedEmbeddingModelId"
+                          [style.opacity]="(!selectedEmbeddingModelId) ? 0.5 : 1"
+                          style="width: 100px; padding: 8px 0; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap; text-align: center; display: flex; justify-content: center; align-items: center;">
                       {{ confirmingEmbeddingDelete ? 'Confirm?' : 'Delete' }}
                   </button>
               </div>
@@ -327,7 +327,7 @@ export class AppComponent implements OnInit {
 
   isModelInstalled ( modelId: string, models: ModelConfig[] ): boolean {
     const model = models.find( m => m.id === modelId );
-    return model ? model.isInstalled !== false : true; // Default to true (hidden/disabled) if not found or unsure
+    return model ? model.isInstalled !== false : false; // Default to false (show download) if not found
   }
 
   // OpenAI

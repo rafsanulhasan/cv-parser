@@ -830,3 +830,44 @@ upgrade(db, oldVersion, newVersion, transaction) {
 - [x] Update `OllamaService` to support `AbortSignal`.
 - [x] Update `AppComponent` to implement cancel logic and UI toggling.
 - [x] Verify with browser test.
+
+#### Use Case 7.4: Context-Aware Action Buttons
+
+**User Story 7.4.1: Dynamic Download/Delete**:
+
+- **As** a user
+- **I want** to see only the relevant action button for the selected model
+- **So that** the interface is cleaner and less confusing
+
+**Acceptance Criteria**:
+
+- If the selected model is **Installed**: Show "Delete" button. Hide "Download".
+- If the selected model is **Not Installed**: Show "Download" button. Hide "Delete".
+- If a download is **In Progress**: Show "Cancel" button. Hide others.
+- Applies to both Chat and Embedding models.
+
+**Tasks**:
+
+- [x] Update `AppComponent` template logic.
+- [x] Update `isModelInstalled` logic to handle missing models correctly.
+- [x] Verify with browser test.
+
+#### Use Case 7.5: Consistent UI Layout
+
+**User Story 7.5.1: Fixed Width Controls**:
+
+- **As** a user
+- **I want** the action buttons and dropdowns to maintain a consistent size and alignment
+- **So that** the UI doesn't jump or shift when I switch between different models or states
+
+**Acceptance Criteria**:
+
+- Action buttons (Download, Cancel, Delete) have a fixed width (e.g., 100px).
+- Button text is centered.
+- Dropdowns take up the remaining available width.
+- Layout remains stable when toggling between states.
+
+**Tasks**:
+
+- [x] Apply fixed width and centering styles to buttons in `AppComponent`.
+- [x] Verify layout stability with browser test.
