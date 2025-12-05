@@ -164,6 +164,7 @@ await storageService.importDocuments(documentsArray);
 - **Layout**: Max-width 800px, centered container, 20px padding
 - **Border Radius**: 4-8px for cards/inputs
 - **Transitions**: 0.3s ease for smooth animations
+- **Confirmations**: Avoid `window.confirm()`. Use 2-step UI buttons (Delete -> Confirm?).
 
 ## Error Handling
 

@@ -436,23 +436,26 @@ upgrade(db, oldVersion, newVersion, transaction) {
 **User Story 1.1.3: Delete Installed Models**:
 
 - **As** an unemployed technical Privacy-Conscious person
-- **I want to** delete installed models
-- **So that** I can free up disk space when I no longer need a specific model
+- **I want to** delete installed models safely
+- **So that** I can free up disk space without accidentally removing models I need
 
 **Acceptance Criteria**:
 
 - "Delete" button visible for installed models
 - "Delete" button enabled only when model is installed
-- Clicking "Delete" removes model from local Ollama
-- UI shows "Deleting..." status
+- **2-Step Confirmation**:
+  - First click changes button text to "Confirm?" (Red warning state)
+  - Second click (within 3 seconds) triggers deletion
+  - If no second click, button reverts to "Delete"
+- UI shows "Deleting..." status during removal
 - Dropdowns disabled during deletion
 - After deletion, model moves to "Available to Download" list
 
 **Tasks**:
 
 1. Select installed model
-2. Click "Delete"
-3. Verify "Deleting..." status
+2. Click "Delete" -> Verify button changes to "Confirm?"
+3. Click "Confirm?" -> Verify "Deleting..." status
 4. Verify model removed and "Download" button enabled
 
 **User Story 1.1.4: Upload and Process CV**:

@@ -72,6 +72,7 @@ this.engine = await CreateMLCEngine(modelId, { initProgressCallback });
 - File colors: PDF(red), DOCX(blue), TXT(gray), MD(purple), JSON(green)
 - Provider tabs: Browser | Ollama | OpenAI
 - Model grouping: Installed vs Available
+- **Confirmation**: NO `window.confirm()`. Use 2-step UI buttons.
 
 ### 7. State Persistence
 localStorage: `selectedProvider`, `selectedEmbeddingModel`, `selectedChatModel`, `openaiApiKey`, `ollamaApiUrl`, `ollamaApiKey`

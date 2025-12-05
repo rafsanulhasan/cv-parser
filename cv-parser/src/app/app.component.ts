@@ -20,6 +20,7 @@ interface ProgressStep {
   template: `
     <div style="padding: 20px; font-family: sans-serif; max-width: 800px; margin: 0 auto;">
       <h1>Browser AI Vector Store</h1>
+
       
       <!-- Model Configuration Panel -->
       <div style="margin-bottom: 20px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
@@ -148,7 +149,7 @@ interface ProgressStep {
                           [disabled]="!selectedChatModelId || isPullingChat || !isModelInstalled(selectedChatModelId, availableChatModels)"
                           [style.opacity]="(!selectedChatModelId || isPullingChat || !isModelInstalled(selectedChatModelId, availableChatModels)) ? 0.5 : 1"
                           style="padding: 8px 15px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap; margin-left: 5px;">
-                      Delete
+                      {{ confirmingChatDelete ? 'Confirm?' : 'Delete' }}
                   </button>
               </div>
 
@@ -414,10 +415,9 @@ export class AppComponent implements OnInit {
     this.checkOllamaModelStatus( modelId, 'embedding' );
   }
 
-  onChatModelChange ( event: Event ) {
-    const select = event.target as HTMLSelectElement;
+  onChatModelChange ( modelId: string ) {
     // Just check status to update internal state if needed, but don't prompt
-    this.checkOllamaModelStatus( select.value, 'chat' );
+    this.checkOllamaModelStatus( modelId, 'chat' );
   }
 
   checkOllamaModelStatus ( modelId: string, type: 'chat' | 'embedding' ) {
@@ -488,14 +488,31 @@ export class AppComponent implements OnInit {
       console.error( 'Delete failed:', e );
       alert( 'Failed to delete model: ' + e );
     } finally {
+
       this.isPullingEmbedding = false;
       this.embeddingPullProgress = { status: '', completed: 0, total: 0, percent: 0 };
     }
   }
 
+  confirmingChatDelete = false;
+  private chatDeleteTimeout: any;
+
   async deleteChatModel () {
     if ( !this.selectedChatModelId ) return;
-    if ( !confirm( `Are you sure you want to delete ${ this.selectedChatModelId }?` ) ) return;
+
+    if ( !this.confirmingChatDelete ) {
+      this.confirmingChatDelete = true;
+      // Reset after 3 seconds
+      if ( this.chatDeleteTimeout ) clearTimeout( this.chatDeleteTimeout );
+      this.chatDeleteTimeout = setTimeout( () => {
+        this.confirmingChatDelete = false;
+      }, 3000 );
+      return;
+    }
+
+    // Confirmed
+    this.confirmingChatDelete = false;
+    if ( this.chatDeleteTimeout ) clearTimeout( this.chatDeleteTimeout );
 
     this.isPullingChat = true;
     this.chatPullProgress = { status: 'Deleting...', completed: 0, total: 0, percent: 100 };
@@ -570,10 +587,10 @@ export class AppComponent implements OnInit {
           const mbLoaded = globalCompleted / ( 1024 * 1024 );
           const mbTotal = globalTotal / ( 1024 * 1024 );
           const speedVal = mbLoaded / duration;
-          speed = `(download speed ${ speedVal.toFixed( 1 ) } MB/s)`;
+          speed = `( download speed ${ speedVal.toFixed( 1 ) } MB / s )`;
 
           if ( globalTotal > 0 ) {
-            status = `Pulling ${ modelName } - Pulled ${ mbLoaded.toFixed( 1 ) } MB of ${ mbTotal.toFixed( 1 ) } MB ${ speed }`;
+            status = `Pulling ${ modelName } - Pulled ${ mbLoaded.toFixed( 1 ) } MB of ${ mbTotal.toFixed( 1 ) } MB ${ speed } `;
           }
         }
 
@@ -595,7 +612,7 @@ export class AppComponent implements OnInit {
       }
 
     } catch ( e ) {
-      alert( `Failed to pull model: ${ e }` );
+      alert( `Failed to pull model: ${ e } ` );
     } finally {
       if ( type === 'chat' ) {
         this.isPullingChat = false;

@@ -276,6 +276,7 @@ steps: ProgressStep[] = [
 - **Formatting**: 2 spaces indentation, semicolons
 - **Error Handling**: Try/catch with user-friendly error messages
 - **Comments**: Document complex logic (especially multi-layer progress tracking)
+- **Destructive Actions**: Avoid `window.confirm()`. Use 2-step UI confirmation (e.g., "Delete" -> "Confirm?") for better reliability and UX.
 
 ## Common Tasks
 

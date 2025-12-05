@@ -386,6 +386,19 @@ curl http://localhost:11434/api/generate -d '{
 - ✅ Fixed provider switching not updating model lists
 - ✅ Fixed WebLLM engine not releasing GPU properly (added reload pattern)
 
+### 11. Avoid Native Confirm Dialogs
+**Problem**: `window.confirm()` can be unreliable, blocked by browsers/environments, or fail silently (especially in embedded views or specific browser modes).
+**Solution**: Use in-UI 2-step confirmation (e.g., button text changes to "Confirm?").
+**Pattern**:
+```typescript
+if (!this.confirming) {
+  this.confirming = true;
+  setTimeout(() => this.confirming = false, 3000); // Reset
+  return;
+}
+// Proceed with action
+```
+
 ## UI Testing Process
 
 ### Automated Testing Setup
