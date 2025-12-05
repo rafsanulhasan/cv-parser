@@ -94,7 +94,7 @@ interface ProgressStep {
                           [disabled]="!selectedEmbeddingModelId || isPullingEmbedding || !isModelInstalled(selectedEmbeddingModelId, embeddingModels)"
                           [style.opacity]="(!selectedEmbeddingModelId || isPullingEmbedding || !isModelInstalled(selectedEmbeddingModelId, embeddingModels)) ? 0.5 : 1"
                           style="padding: 8px 15px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap; margin-left: 5px;">
-                      Delete
+                      {{ confirmingEmbeddingDelete ? 'Confirm?' : 'Delete' }}
                   </button>
               </div>
               
@@ -463,9 +463,25 @@ export class AppComponent implements OnInit {
     await this.pullOllamaModel( this.selectedChatModelId, 'chat' );
   }
 
+  confirmingEmbeddingDelete = false;
+  private embeddingDeleteTimeout: any;
+
   async deleteEmbeddingModel () {
     if ( !this.selectedEmbeddingModelId ) return;
-    if ( !confirm( `Are you sure you want to delete ${ this.selectedEmbeddingModelId }?` ) ) return;
+
+    if ( !this.confirmingEmbeddingDelete ) {
+      this.confirmingEmbeddingDelete = true;
+      // Reset after 3 seconds
+      if ( this.embeddingDeleteTimeout ) clearTimeout( this.embeddingDeleteTimeout );
+      this.embeddingDeleteTimeout = setTimeout( () => {
+        this.confirmingEmbeddingDelete = false;
+      }, 3000 );
+      return;
+    }
+
+    // Confirmed
+    this.confirmingEmbeddingDelete = false;
+    if ( this.embeddingDeleteTimeout ) clearTimeout( this.embeddingDeleteTimeout );
 
     this.isPullingEmbedding = true;
     this.embeddingPullProgress = { status: 'Deleting...', completed: 0, total: 0, percent: 100 };
