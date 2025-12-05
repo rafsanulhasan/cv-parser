@@ -133,7 +133,7 @@ export class OllamaService {
         }
     }
 
-    async pullModel ( modelName: string, progressCallback?: ( status: string, completed: number, total: number, digest?: string ) => void ) {
+    async pullModel ( modelName: string, progressCallback?: ( status: string, completed: number, total: number, digest?: string ) => void, signal?: AbortSignal ) {
         const MAX_RETRIES = 3;
         const STALL_TIMEOUT = 30000; // 30 seconds without progress
 
@@ -150,7 +150,7 @@ export class OllamaService {
                     method: 'POST',
                     headers: this.getHeaders(),
                     body: JSON.stringify( { name: modelName, stream: true } ),
-                    signal: controller.signal
+                    signal: signal || controller.signal
                 } );
 
                 clearTimeout( timeoutId ); // Clear initial connection timeout
@@ -198,6 +198,10 @@ export class OllamaService {
 
                 if ( attempt === MAX_RETRIES ) {
                     throw new Error( `Failed to pull model after ${ MAX_RETRIES } attempts: ${ error.message }` );
+                }
+
+                if ( signal?.aborted ) {
+                    throw new Error( 'Download cancelled by user' );
                 }
 
                 // Notify retry

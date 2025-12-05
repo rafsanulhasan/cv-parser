@@ -82,17 +82,22 @@ interface ProgressStep {
                         </option>
                     </ng-template>
                   </select>
-                  <button *ngIf="selectedProvider === 'ollama'" 
+                  <button *ngIf="selectedProvider === 'ollama' && !isPullingChat" 
                           (click)="downloadChatModel()" 
-                          [disabled]="!selectedChatModelId || isPullingChat || isModelInstalled(selectedChatModelId, availableChatModels)"
-                          [style.opacity]="(!selectedChatModelId || isPullingChat || isModelInstalled(selectedChatModelId, availableChatModels)) ? 0.5 : 1"
+                          [disabled]="!selectedChatModelId || isModelInstalled(selectedChatModelId, availableChatModels)"
+                          [style.opacity]="(!selectedChatModelId || isModelInstalled(selectedChatModelId, availableChatModels)) ? 0.5 : 1"
                           style="padding: 8px 15px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap;">
                       Download
                   </button>
-                  <button *ngIf="selectedProvider === 'ollama'" 
+                  <button *ngIf="selectedProvider === 'ollama' && isPullingChat" 
+                          (click)="cancelChatPull()" 
+                          style="padding: 8px 15px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap;">
+                      Cancel
+                  </button>
+                  <button *ngIf="selectedProvider === 'ollama' && !isPullingChat" 
                           (click)="deleteChatModel()" 
-                          [disabled]="!selectedChatModelId || isPullingChat || !isModelInstalled(selectedChatModelId, availableChatModels)"
-                          [style.opacity]="(!selectedChatModelId || isPullingChat || !isModelInstalled(selectedChatModelId, availableChatModels)) ? 0.5 : 1"
+                          [disabled]="!selectedChatModelId || !isModelInstalled(selectedChatModelId, availableChatModels)"
+                          [style.opacity]="(!selectedChatModelId || !isModelInstalled(selectedChatModelId, availableChatModels)) ? 0.5 : 1"
                           style="padding: 8px 15px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap; margin-left: 5px;">
                       {{ confirmingChatDelete ? 'Confirm?' : 'Delete' }}
                   </button>
@@ -137,17 +142,22 @@ interface ProgressStep {
                         </option>
                     </ng-template>
                   </select>
-                  <button *ngIf="selectedProvider === 'ollama'" 
+                  <button *ngIf="selectedProvider === 'ollama' && !isPullingEmbedding" 
                           (click)="downloadEmbeddingModel()" 
-                          [disabled]="!selectedEmbeddingModelId || isPullingEmbedding || isModelInstalled(selectedEmbeddingModelId, embeddingModels)"
-                          [style.opacity]="(!selectedEmbeddingModelId || isPullingEmbedding || isModelInstalled(selectedEmbeddingModelId, embeddingModels)) ? 0.5 : 1"
+                          [disabled]="!selectedEmbeddingModelId || isModelInstalled(selectedEmbeddingModelId, embeddingModels)"
+                          [style.opacity]="(!selectedEmbeddingModelId || isModelInstalled(selectedEmbeddingModelId, embeddingModels)) ? 0.5 : 1"
                           style="padding: 8px 15px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap;">
-                      {{ isPullingEmbedding ? 'Downloading...' : 'Download' }}
+                      Download
                   </button>
-                  <button *ngIf="selectedProvider === 'ollama'" 
+                  <button *ngIf="selectedProvider === 'ollama' && isPullingEmbedding" 
+                          (click)="cancelEmbeddingPull()" 
+                          style="padding: 8px 15px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap;">
+                      Cancel
+                  </button>
+                  <button *ngIf="selectedProvider === 'ollama' && !isPullingEmbedding" 
                           (click)="deleteEmbeddingModel()" 
-                          [disabled]="!selectedEmbeddingModelId || isPullingEmbedding || !isModelInstalled(selectedEmbeddingModelId, embeddingModels)"
-                          [style.opacity]="(!selectedEmbeddingModelId || isPullingEmbedding || !isModelInstalled(selectedEmbeddingModelId, embeddingModels)) ? 0.5 : 1"
+                          [disabled]="!selectedEmbeddingModelId || !isModelInstalled(selectedEmbeddingModelId, embeddingModels)"
+                          [style.opacity]="(!selectedEmbeddingModelId || !isModelInstalled(selectedEmbeddingModelId, embeddingModels)) ? 0.5 : 1"
                           style="padding: 8px 15px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap; margin-left: 5px;">
                       {{ confirmingEmbeddingDelete ? 'Confirm?' : 'Delete' }}
                   </button>
@@ -327,9 +337,11 @@ export class AppComponent implements OnInit {
   // Ollama Pull
   isPullingEmbedding = false;
   embeddingPullProgress = { status: '', completed: 0, total: 0, percent: 0 };
+  embeddingPullAbortController: AbortController | null = null;
 
   isPullingChat = false;
   chatPullProgress = { status: '', completed: 0, total: 0, percent: 0 };
+  chatPullAbortController: AbortController | null = null;
 
   isProcessing = false;
   progressPercent = 0;
@@ -452,12 +464,28 @@ export class AppComponent implements OnInit {
 
   async downloadEmbeddingModel () {
     if ( !this.selectedEmbeddingModelId ) return;
-    await this.pullOllamaModel( this.selectedEmbeddingModelId, 'embedding' );
+    this.embeddingPullAbortController = new AbortController();
+    await this.pullOllamaModel( this.selectedEmbeddingModelId, 'embedding', this.embeddingPullAbortController.signal );
+  }
+
+  cancelEmbeddingPull () {
+    if ( this.embeddingPullAbortController ) {
+      this.embeddingPullAbortController.abort();
+      this.embeddingPullAbortController = null;
+    }
   }
 
   async downloadChatModel () {
     if ( !this.selectedChatModelId ) return;
-    await this.pullOllamaModel( this.selectedChatModelId, 'chat' );
+    this.chatPullAbortController = new AbortController();
+    await this.pullOllamaModel( this.selectedChatModelId, 'chat', this.chatPullAbortController.signal );
+  }
+
+  cancelChatPull () {
+    if ( this.chatPullAbortController ) {
+      this.chatPullAbortController.abort();
+      this.chatPullAbortController = null;
+    }
   }
 
   confirmingEmbeddingDelete = false;
@@ -551,7 +579,7 @@ export class AppComponent implements OnInit {
     }
   }
 
-  async pullOllamaModel ( modelName: string, type: 'chat' | 'embedding' ) {
+  async pullOllamaModel ( modelName: string, type: 'chat' | 'embedding', signal?: AbortSignal ) {
     let startTime = Date.now();
 
     // Track progress per layer (digest)
@@ -612,7 +640,7 @@ export class AppComponent implements OnInit {
         } else {
           this.embeddingPullProgress = { status, completed: globalCompleted, total: globalTotal, percent };
         }
-      } );
+      }, signal );
 
       this.modelRegistry.refreshModels(); // Refresh to update status
 
@@ -624,8 +652,12 @@ export class AppComponent implements OnInit {
         this.selectedEmbeddingModelId = modelName;
       }
 
-    } catch ( e ) {
-      alert( `Failed to pull model: ${ e } ` );
+    } catch ( e: any ) {
+      if ( e.message === 'Download cancelled by user' ) {
+        console.log( 'Download cancelled' );
+      } else {
+        alert( `Failed to pull model: ${ e } ` );
+      }
     } finally {
       if ( type === 'chat' ) {
         this.isPullingChat = false;

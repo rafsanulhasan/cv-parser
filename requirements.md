@@ -809,3 +809,24 @@ upgrade(db, oldVersion, newVersion, transaction) {
 - [x] Update `app.component.ts` to move Ollama note to bottom.
 - [x] Update `app.component.ts` to remove label suffixes and helper text.
 - [x] Verify changes with browser test.
+
+#### Use Case 7.3: Download Cancellation
+
+**User Story 7.3.1: Cancel Model Download**:
+
+- **As** a user
+- **I want** to be able to cancel a model download in progress
+- **So that** I can stop an accidental download or retry a stuck one without refreshing the page
+
+**Acceptance Criteria**:
+
+- When "Download" is clicked, the button is replaced by a "Cancel" button.
+- Clicking "Cancel" stops the download immediately.
+- The UI reverts to the "Download" state (button reappears, progress bar clears).
+- Works for both Chat and Embedding models.
+
+**Tasks**:
+
+- [x] Update `OllamaService` to support `AbortSignal`.
+- [x] Update `AppComponent` to implement cancel logic and UI toggling.
+- [x] Verify with browser test.
