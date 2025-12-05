@@ -104,12 +104,12 @@ interface ProgressStep {
               </div>
 
               <!-- Chat Progress -->
-              <div *ngIf="isPullingChat" style="margin-top: 10px; padding: 10px; background: #e2e3e5; border-radius: 4px;">
+              <div *ngIf="isPullingChat" style="margin-top: 10px; padding: 10px; background: transparent; border-radius: 4px;">
                 <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
                     <strong>{{ chatPullProgress.status.startsWith('Deleting') ? 'Deleting...' : 'Downloading...' }}</strong>
                     <span>{{ chatPullProgress.percent }}%</span>
                 </div>
-                <div style="height: 10px; background: #fff; border-radius: 5px; overflow: hidden;">
+                <div style="height: 20px; background: #fff; border-radius: 5px; overflow: hidden; border: 1px solid #dee2e6;">
                     <div [style.width.%]="chatPullProgress.percent" style="height: 100%; background: #007bff; transition: width 0.3s ease;"></div>
                 </div>
                 <p style="margin: 5px 0 0; font-size: 0.8em; color: #666;">{{ chatPullProgress.status }}</p>
@@ -164,12 +164,12 @@ interface ProgressStep {
               </div>
               
               <!-- Embedding Progress -->
-              <div *ngIf="isPullingEmbedding" style="margin-top: 10px; padding: 10px; background: #e2e3e5; border-radius: 4px;">
+              <div *ngIf="isPullingEmbedding" style="margin-top: 10px; padding: 10px; background: transparent; border-radius: 4px;">
                 <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
                     <strong>{{ embeddingPullProgress.status.startsWith('Deleting') ? 'Deleting...' : 'Downloading...' }}</strong>
                     <span>{{ embeddingPullProgress.percent }}%</span>
                 </div>
-                <div style="height: 10px; background: #fff; border-radius: 5px; overflow: hidden;">
+                <div style="height: 20px; background: #fff; border-radius: 5px; overflow: hidden; border: 1px solid #dee2e6;">
                     <div [style.width.%]="embeddingPullProgress.percent" style="height: 100%; background: #007bff; transition: width 0.3s ease;"></div>
                 </div>
                 <p style="margin: 5px 0 0; font-size: 0.8em; color: #666; text-align: center;">{{ embeddingPullProgress.status }}</p>
@@ -849,8 +849,8 @@ export class AppComponent implements OnInit {
       case 'docx':
       case 'doc': return '#007bff'; // Blue
       case 'txt': return '#6c757d'; // Gray
-      case 'json': return '#ffc107'; // Yellow
-      case 'md': return '#17a2b8'; // Teal
+      case 'json': return '#28a745'; // Green
+      case 'md': return '#6f42c1'; // Purple
       default: return '#333'; // Dark
     }
   }

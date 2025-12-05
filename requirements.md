@@ -809,6 +809,8 @@ upgrade(db, oldVersion, newVersion, transaction) {
 - [x] Update `app.component.ts` to move Ollama note to bottom.
 - [x] Update `app.component.ts` to remove label suffixes and helper text.
 - [x] Verify changes with browser test.
+- **Progress Bar Styling**: The progress bar background for both chat and embedding models MUST be transparent, not grey. It MUST have a visible border and rounded corners to indicate the track area, and a height of at least 20px.
+- **File Type Colors**: File type icons MUST use the following color coding: PDF (Red), DOCX/DOC (Blue), TXT (Gray), JSON (Green), MD (Purple).
 
 #### Use Case 7.3: Download Cancellation
 
