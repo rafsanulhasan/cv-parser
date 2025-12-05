@@ -112,7 +112,7 @@ interface ProgressStep {
                 <div style="height: 20px; background: #fff; border-radius: 5px; overflow: hidden; border: 1px solid #dee2e6;">
                     <div [style.width.%]="chatPullProgress.percent" style="height: 100%; background: #007bff; transition: width 0.3s ease;"></div>
                 </div>
-                <p style="margin: 5px 0 0; font-size: 0.8em; color: #666;">{{ chatPullProgress.status }}</p>
+                <p style="margin: 5px 0 0; font-size: 0.8em; color: #666; text-align: center;">{{ chatPullProgress.status }}</p>
               </div>
 
               <p *ngIf="selectedProvider === 'browser'" style="margin: 5px 0 0; font-size: 0.8em; color: #dc3545;">

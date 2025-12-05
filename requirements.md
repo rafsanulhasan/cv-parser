@@ -873,3 +873,19 @@ upgrade(db, oldVersion, newVersion, transaction) {
 
 - [x] Apply fixed width and centering styles to buttons in `AppComponent`.
 - [x] Verify layout stability with browser test.
+
+#### Use Case 7.6: Progress Bar Alignment
+
+**User Story 7.6.1: Centered Status Text**:
+
+- **As** a user
+- **I want** the status text in the chat model download progress bar to be center-aligned
+- **So that** it looks more balanced and professional
+
+**Acceptance Criteria**:
+
+- The status text (e.g., "Downloading...", "Pulling...") in the chat model progress bar is centered horizontally.
+
+**Tasks**:
+
+- [x] Update `app.component.ts` to add `text-align: center` to the chat progress status paragraph.
