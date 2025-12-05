@@ -1,4 +1,4 @@
-# ANTIGRAVITY.md - CV Parser
+# GEMINI.md - CV Parser
 
 > **📖 Full Architecture:** See [ARCHITECTURE.md](./ARCHITECTURE.md) for complete system design.
 > **🎯 This Document:** Critical gotchas, debugging tips, and known issues.
@@ -8,6 +8,71 @@
 Multi-provider CV analysis tool. Angular 17 frontend, Node.js backend, three AI modes: Browser (WebLLM/Transformers.js), Ollama (Local), OpenAI (Cloud).
 
 ## Critical "Gotchas"
+
+### 0. OpenAI Model Metadata Integration (NEW - Dec 2025)
+
+**Problem**: Hardcoded model metadata (context length, output tokens, knowledge cutoff) becomes stale as OpenAI updates models.
+
+**Solution**: Backend scheduled job + API endpoints for dynamic metadata fetching.
+
+**Implementation**:
+
+1. **Backend (`cv-parser-backend/`):**
+   - `models-metadata.json` - JSON storage for model specs
+   - `utils/model-metadata-fetcher.js` - Metadata update logic
+   - `GET /api/model-metadata` - Fast cached data endpoint
+   - `POST /api/model-metadata/refresh` - Manual trigger with rate limiting (5min)
+   - `node-cron` scheduler - Daily 3 AM refresh
+
+2. **Frontend (`cv-parser/src/app/services/`):**
+   - `ModelRegistryService.fetchOpenAIMetadata()` - GET from backend
+   - `ModelRegistryService.refreshOpenAIMetadata()` - POST refresh
+   - `cachedOpenAIMetadata` - Local cache for fast lookups
+
+3. **Critical Fix - Metadata Application:**
+   ```typescript
+   // In ModelRegistryService.refreshModels() OpenAI case
+   const getMetadataFor = (modelId: string) => {
+     // Exact match first
+     if (this.cachedOpenAIMetadata?.models?.[modelId]) {
+       return this.cachedOpenAIMetadata.models[modelId];
+     }
+     
+     // Fuzzy match (handles "gpt-4o-2024-05-13" -> "gpt-4o")
+     for (const [key, value] of Object.entries(this.cachedOpenAIMetadata.models)) {
+       if (modelId.includes(key) || key.includes(modelId)) {
+         return value;
+       }
+     }
+     
+    // Fallback
+     return { contextLength: 'Unknown', outputTokens: 'Unknown', ... };
+   };
+   
+   models = openAIModels.map(m => ({
+     ...m,
+     ...getMetadataFor(m.id)  // Inject metadata here!
+   }));
+   ```
+
+4. **Modal UI:**
+   - Refresh button (🔄) with loading state (⏳)
+   - "Last Updated" timestamp from backend
+   - Error handling for rate limits
+
+**Debugging**:
+```bash
+# Test backend API
+curl http://localhost:3000/api/model-metadata
+curl -X POST http://localhost:3000/api/model-metadata/refresh
+
+# Check JSON file
+cat cv-parser-backend/models-metadata.json
+```
+
+**Common Error**: Modal shows "Unknown" for all fields
+- **Cause**: `refreshModels()` maps OpenAI models but doesn't apply cached metadata
+- **Fix**: Use `getMetadataFor()` helper to inject `contextLength`, `outputTokens`, `knowledgeCutoff`
 
 ### 1. Ollama Multi-Layer Downloads
 

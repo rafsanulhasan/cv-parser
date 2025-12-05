@@ -1,6 +1,10 @@
 const express = require( 'express' );
 const cors = require( 'cors' );
 const fetch = require( 'node-fetch' );
+const cron = require( 'node-cron' );
+const { fetchAndUpdateModelMetadata } = require( './utils/model-metadata-fetcher' );
+const fs = require( 'fs' ).promises;
+const path = require( 'path' );
 
 const app = express();
 const PORT = 3000;
@@ -47,8 +51,6 @@ app.get( '/models/*', async ( req, res ) => {
 } );
 
 const multer = require( 'multer' );
-const path = require( 'path' );
-const fs = require( 'fs' );
 
 // Configure Multer for file uploads
 const storage = multer.diskStorage( {
@@ -153,6 +155,73 @@ app.get( '/ollama/library', async ( req, res ) => {
     }
 } );
 
+// ==================== Model Metadata Endpoints ====================
+
+// Rate limiting for refresh endpoint
+let lastRefreshTime = null;
+const REFRESH_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
+
+// GET endpoint - read metadata from JSON file
+app.get( '/api/model-metadata', async ( req, res ) => {
+    try {
+        const metadataPath = path.join( __dirname, 'models-metadata.json' );
+        const data = await fs.readFile( metadataPath, 'utf-8' );
+        res.json( JSON.parse( data ) );
+    } catch ( error ) {
+        console.error( '[API] Error reading metadata:', error );
+        res.status( 500 ).json( { error: 'Failed to read metadata' } );
+    }
+} );
+
+// POST endpoint - trigger immediate metadata refresh
+app.post( '/api/model-metadata/refresh', async ( req, res ) => {
+    try {
+        // Check rate limit
+        const now = Date.now();
+        if ( lastRefreshTime && ( now - lastRefreshTime ) < REFRESH_COOLDOWN_MS ) {
+            const remainingTime = Math.ceil( ( REFRESH_COOLDOWN_MS - ( now - lastRefreshTime ) ) / 1000 );
+            return res.status( 429 ).json( {
+                error: 'Too many requests',
+                message: `Please wait ${ remainingTime } seconds before refreshing again`,
+                remainingSeconds: remainingTime
+            } );
+        }
+
+        console.log( '[API] Manual metadata refresh triggered' );
+        const updatedMetadata = await fetchAndUpdateModelMetadata();
+        lastRefreshTime = now;
+
+        res.json( {
+            success: true,
+            message: 'Metadata refreshed successfully',
+            data: updatedMetadata
+        } );
+    } catch ( error ) {
+        console.error( '[API] Error refreshing metadata:', error );
+        res.status( 500 ).json( {
+            error: 'Failed to refresh metadata',
+            message: error.message
+        } );
+    }
+} );
+
+// Scheduled job - runs daily at 3 AM
+cron.schedule( '0 3 * * *', async () => {
+    console.log( '[Cron] Running scheduled metadata refresh at 3 AM...' );
+    try {
+        await fetchAndUpdateModelMetadata();
+        console.log( '[Cron] ✓ Scheduled refresh completed' );
+    } catch ( error ) {
+        console.error( '[Cron] ✗ Scheduled refresh failed:', error );
+    }
+} );
+
+// ==================== Server Start ====================
+
 app.listen( PORT, () => {
     console.log( `Backend proxy server running at http://localhost:${ PORT }` );
+    console.log( `Model metadata endpoints:` );
+    console.log( `  - GET  /api/model-metadata` );
+    console.log( `  - POST /api/model-metadata/refresh` );
+    console.log( `Scheduled job: Daily at 3:00 AM` );
 } );

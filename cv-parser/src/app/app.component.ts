@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { EmbeddingService } from './services/embedding.service';
@@ -44,6 +44,9 @@ interface ProgressStep {
             <div style="display: flex;">
               <input type="password" [(ngModel)]="openAIKey" placeholder="sk-..." style="flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px; margin-right: 10px;">
               <button (click)="saveOpenAIKey()" style="padding: 8px 15px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">Save</button>
+              <button (click)="refreshOpenAIModels()" [disabled]="isRefreshingModels" style="margin-left: 10px; padding: 8px 15px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;" title="Refresh Models">
+                {{ isRefreshingModels ? '...' : '↻' }}
+              </button>
             </div>
           </div>
 
@@ -63,25 +66,33 @@ interface ProgressStep {
             <div style="margin-bottom: 15px;">
               <label style="display: block; font-weight: bold; margin-bottom: 5px;">Chat Model</label>
               <div style="display: flex; gap: 10px;">
-                  <select [ngModel]="selectedChatModelId" (ngModelChange)="onChatModelChange($event)" [disabled]="isPullingChat" style="flex: 1; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
-                    <ng-container *ngIf="selectedProvider === 'ollama'; else simpleChat">
-                        <optgroup label="Installed Models (Ready)">
-                            <option *ngFor="let model of getInstalledModels(availableChatModels)" [value]="model.id">
-                                {{ model.name }} ({{ model.size }})
+                  <div style="flex: 1; display: flex; align-items: center; border: 1px solid #ccc; border-radius: 4px; background: white;">
+                    <select [ngModel]="selectedChatModelId" (ngModelChange)="onChatModelChange($event)" [disabled]="isPullingChat || isRefreshingModels" style="flex: 1; padding: 8px; border: none; background: transparent; outline: none;">
+                        <ng-container *ngIf="selectedProvider === 'ollama'; else simpleChat">
+                            <optgroup label="Installed Models (Ready)">
+                                <option *ngFor="let model of getInstalledModels(availableChatModels)" [value]="model.id">
+                                    {{ model.name }} ({{ model.size }})
+                                </option>
+                            </optgroup>
+                            <optgroup label="Available to Download">
+                                <option *ngFor="let model of getCloudModels(availableChatModels)" [value]="model.id">
+                                    {{ model.name }}
+                                </option>
+                            </optgroup>
+                        </ng-container>
+                        <ng-template #simpleChat>
+                            <option *ngFor="let model of availableChatModels" [value]="model.id">
+                                {{ model.name }} <span *ngIf="model.size && selectedProvider !== 'openai'">({{ model.size }})</span> <span *ngIf="model.cached">✅ Cached</span>
                             </option>
-                        </optgroup>
-                        <optgroup label="Available to Download">
-                            <option *ngFor="let model of getCloudModels(availableChatModels)" [value]="model.id">
-                                {{ model.name }}
-                            </option>
-                        </optgroup>
-                    </ng-container>
-                    <ng-template #simpleChat>
-                        <option *ngFor="let model of availableChatModels" [value]="model.id">
-                            {{ model.name }} <span *ngIf="model.size">({{ model.size }})</span> <span *ngIf="model.cached">✅ Cached</span>
-                        </option>
-                    </ng-template>
-                  </select>
+                        </ng-template>
+                    </select>
+                    <button *ngIf="selectedProvider === 'openai'" 
+                            (click)="openModelInfo(selectedChatModelId, 'chat')" 
+                            style="padding: 0 8px; background: transparent; border: none; cursor: pointer; font-size: 1.1em; border-left: 1px solid #eee;" 
+                            title="Model Info">
+                        ℹ️
+                    </button>
+                  </div>
                   <button *ngIf="selectedProvider === 'ollama' && !isPullingChat && !isModelInstalled(selectedChatModelId, availableChatModels)" 
                           (click)="downloadChatModel()" 
                           [disabled]="!selectedChatModelId"
@@ -123,25 +134,33 @@ interface ProgressStep {
             <div style="margin-bottom: 15px;">
               <label style="display: block; font-weight: bold; margin-bottom: 5px;">Embedding Model</label>
               <div style="display: flex; gap: 10px;">
-                  <select [ngModel]="selectedEmbeddingModelId" (ngModelChange)="onEmbeddingModelChange($event)" [disabled]="isPullingEmbedding" style="flex: 1; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
-                    <ng-container *ngIf="selectedProvider === 'ollama'; else simpleEmbedding">
-                        <optgroup label="Installed Models (Ready)">
-                            <option *ngFor="let model of getInstalledModels(embeddingModels)" [value]="model.id">
-                                {{ model.name }} ({{ model.size }})
+                  <div style="flex: 1; display: flex; align-items: center; border: 1px solid #ccc; border-radius: 4px; background: white;">
+                    <select [ngModel]="selectedEmbeddingModelId" (ngModelChange)="onEmbeddingModelChange($event)" [disabled]="isPullingEmbedding || isRefreshingModels" style="flex: 1; padding: 8px; border: none; background: transparent; outline: none;">
+                        <ng-container *ngIf="selectedProvider === 'ollama'; else simpleEmbedding">
+                            <optgroup label="Installed Models (Ready)">
+                                <option *ngFor="let model of getInstalledModels(embeddingModels)" [value]="model.id">
+                                    {{ model.name }} ({{ model.size }})
+                                </option>
+                            </optgroup>
+                            <optgroup label="Available to Download">
+                                <option *ngFor="let model of getCloudModels(embeddingModels)" [value]="model.id">
+                                    {{ model.name }}
+                                </option>
+                            </optgroup>
+                        </ng-container>
+                        <ng-template #simpleEmbedding>
+                            <option *ngFor="let model of embeddingModels" [value]="model.id">
+                                {{ model.name }} <span *ngIf="model.size && selectedProvider !== 'openai'">({{ model.size }})</span> <span *ngIf="model.cached">✅ Cached</span>
                             </option>
-                        </optgroup>
-                        <optgroup label="Available to Download">
-                            <option *ngFor="let model of getCloudModels(embeddingModels)" [value]="model.id">
-                                {{ model.name }}
-                            </option>
-                        </optgroup>
-                    </ng-container>
-                    <ng-template #simpleEmbedding>
-                        <option *ngFor="let model of embeddingModels" [value]="model.id">
-                            {{ model.name }} ({{ model.size }}) <span *ngIf="model.cached">✅ Cached</span>
-                        </option>
-                    </ng-template>
-                  </select>
+                        </ng-template>
+                    </select>
+                    <button *ngIf="selectedProvider === 'openai'" 
+                            (click)="openModelInfo(selectedEmbeddingModelId, 'embedding')" 
+                            style="padding: 0 8px; background: transparent; border: none; cursor: pointer; font-size: 1.1em; border-left: 1px solid #eee;" 
+                            title="Model Info">
+                        ℹ️
+                    </button>
+                  </div>
                   <button *ngIf="selectedProvider === 'ollama' && !isPullingEmbedding && !isModelInstalled(selectedEmbeddingModelId, embeddingModels)" 
                           (click)="downloadEmbeddingModel()" 
                           [disabled]="!selectedEmbeddingModelId"
@@ -302,6 +321,39 @@ interface ProgressStep {
         </details>
       </div>
     </div>
+
+    <!-- Model Info Modal -->
+    <div *ngIf="showModelInfoModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000;">
+      <div style="background: white; padding: 20px; border-radius: 8px; width: 400px; max-width: 90%; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+          <h3 style="margin: 0;">{{ selectedModelDetails?.name }}</h3>
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <button 
+              (click)="refreshModelMetadata()" 
+              [disabled]="isRefreshingMetadata"
+              style="background: none; border: 1px solid #007bff; color: #007bff; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 1.2em;"
+              title="Refresh metadata from backend">
+              {{ isRefreshingMetadata ? '⏳' : '🔄' }}
+            </button>
+            <button (click)="closeModelInfo()" style="background: none; border: none; font-size: 1.5em; cursor: pointer;">&times;</button>
+          </div>
+        </div>
+        
+        <div style="margin-bottom: 15px;">
+          <p><strong>Context Length:</strong> {{ selectedModelDetails?.contextLength || 'Unknown' }}</p>
+          <p><strong>Output Tokens:</strong> {{ selectedModelDetails?.outputTokens || 'Unknown' }}</p>
+          <p><strong>Knowledge Cutoff:</strong> {{ selectedModelDetails?.knowledgeCutoff || 'Unknown' }}</p>
+          <p><strong>Details:</strong> {{ selectedModelDetails?.details || 'N/A' }}</p>
+          <p *ngIf="metadataLastUpdated" style="font-size: 0.85em; color: #666; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #ddd;">
+            <strong>Last Updated:</strong> {{ metadataLastUpdated | date:'medium' }}
+          </p>
+        </div>
+        
+        <div style="text-align: right;">
+          <button (click)="closeModelInfo()" style="padding: 8px 15px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Close</button>
+        </div>
+      </div>
+    </div>
   `
 } )
 export class AppComponent implements OnInit {
@@ -346,6 +398,7 @@ export class AppComponent implements OnInit {
   isProcessing = false;
   progressPercent = 0;
   modelLoadingProgress = '';
+  isRefreshingModels = false;
 
   steps: ProgressStep[] = [
     { name: 'Upload Document', status: 'pending' },
@@ -366,15 +419,19 @@ export class AppComponent implements OnInit {
     private fileParsingService: FileParsingService,
     private modelRegistry: ModelRegistryService,
     private localExtractionService: LocalExtractionService,
-    private ollamaService: OllamaService
-  ) {
+    private ollamaService: OllamaService,
+    private cdr: ChangeDetectorRef
+  ) { }
+
+  ngOnInit () {
+    this.refreshList();
+
     this.modelRegistry.chatModels$.subscribe( models => {
       this.availableChatModels = models;
     } );
 
     this.modelRegistry.selectedChatModel$.subscribe( id => {
       this.selectedChatModelId = id;
-      this.checkOllamaModelStatus( id, 'chat' );
     } );
 
     this.modelRegistry.selectedProvider$.subscribe( provider => {
@@ -384,6 +441,14 @@ export class AppComponent implements OnInit {
 
     this.modelRegistry.openAIKey$.subscribe( key => {
       this.openAIKey = key;
+    } );
+
+    this.modelRegistry.embeddingModels$.subscribe( models => {
+      this.embeddingModels = models;
+    } );
+
+    this.modelRegistry.selectedEmbeddingModel$.subscribe( id => {
+      this.selectedEmbeddingModelId = id;
     } );
 
     // Load Ollama Key
@@ -399,16 +464,6 @@ export class AppComponent implements OnInit {
       this.ollamaUrl = savedOllamaUrl;
       this.ollamaService.setApiUrl( savedOllamaUrl );
     }
-  }
-
-  ngOnInit () {
-    this.refreshList();
-    this.modelRegistry.embeddingModels$.subscribe( models => {
-      this.embeddingModels = models;
-    } );
-    this.modelRegistry.selectedEmbeddingModel$.subscribe( id => {
-      this.selectedEmbeddingModelId = id;
-    } );
   }
 
   toggleSettings () {
@@ -668,8 +723,19 @@ export class AppComponent implements OnInit {
   }
 
   saveOpenAIKey () {
-    this.modelRegistry.setOpenAIKey( this.openAIKey );
+    const trimmedKey = this.openAIKey.trim();
+    this.modelRegistry.setOpenAIKey( trimmedKey );
     alert( 'API Key Saved!' );
+    this.refreshOpenAIModels();
+  }
+
+  async refreshOpenAIModels () {
+    this.isRefreshingModels = true;
+    try {
+      await this.modelRegistry.refreshModels();
+    } finally {
+      this.isRefreshingModels = false;
+    }
   }
 
   saveOllamaConfig () {
@@ -853,5 +919,61 @@ export class AppComponent implements OnInit {
       case 'md': return '#6f42c1'; // Purple
       default: return '#333'; // Dark
     }
+  }
+
+  // --- Model Info Modal ---
+  showModelInfoModal = false;
+  selectedModelDetails: any = null;
+  isRefreshingMetadata = false;
+  metadataLastUpdated: Date | null = null;
+
+  openModelInfo ( modelId: string, type: 'chat' | 'embedding' ) {
+    if ( !modelId ) {
+      alert( 'Please select a model to view details.' );
+      return;
+    }
+
+    const models = type === 'chat' ? this.availableChatModels : this.embeddingModels;
+    const model = models.find( m => m.id === modelId );
+
+    if ( model ) {
+      this.selectedModelDetails = model;
+      this.showModelInfoModal = true;
+
+      // Try to get last updated timestamp from backend metadata
+      this.modelRegistry.fetchOpenAIMetadata().then( data => {
+        if ( data?.lastUpdated ) {
+          this.metadataLastUpdated = new Date( data.lastUpdated );
+        }
+      } );
+    }
+  }
+
+  async refreshModelMetadata () {
+    this.isRefreshingMetadata = true;
+    try {
+      const result = await this.modelRegistry.refreshOpenAIMetadata();
+      if ( result?.data?.lastUpdated ) {
+        this.metadataLastUpdated = new Date( result.data.lastUpdated );
+      }
+
+      // Refresh the model details in the modal
+      const models = this.availableChatModels;
+      const model = models.find( m => m.id === this.selectedModelDetails?.id );
+      if ( model ) {
+        this.selectedModelDetails = model;
+      }
+
+      alert( 'Metadata refreshed successfully!' );
+    } catch ( error: any ) {
+      alert( error.message || 'Failed to refresh metadata. Please try again later.' );
+    } finally {
+      this.isRefreshingMetadata = false;
+    }
+  }
+
+  closeModelInfo () {
+    this.showModelInfoModal = false;
+    this.selectedModelDetails = null;
   }
 }

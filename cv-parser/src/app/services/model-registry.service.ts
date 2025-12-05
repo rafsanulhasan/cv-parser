@@ -104,6 +104,9 @@ export class ModelRegistryService {
   private openAIKeySubject = new BehaviorSubject<string>( '' );
   openAIKey$ = this.openAIKeySubject.asObservable();
 
+  // Cache for OpenAI model metadata from backend
+  private cachedOpenAIMetadata: any = null;
+
   constructor (
     private ollamaService: OllamaService,
     private openAIService: OpenAIService
@@ -117,6 +120,62 @@ export class ModelRegistryService {
 
     // Initial fetch
     this.refreshModels();
+
+    // Fetch OpenAI metadata from backend
+    this.fetchOpenAIMetadata();
+  }
+
+  /**
+   * Fetch OpenAI model metadata from backend API
+   */
+  async fetchOpenAIMetadata (): Promise<any> {
+    try {
+      const response = await fetch( 'http://localhost:3000/api/model-metadata' );
+      if ( !response.ok ) {
+        throw new Error( `HTTP error! status: ${ response.status }` );
+      }
+      const data = await response.json();
+      this.cachedOpenAIMetadata = data;
+      console.log( '[ModelRegistry] Metadata fetched from backend:', data );
+      return data;
+    } catch ( error ) {
+      console.error( '[ModelRegistry] Failed to fetch metadata from backend:', error );
+      return null;
+    }
+  }
+
+  /**
+   * Trigger immediate metadata refresh via backend API
+   */
+  async refreshOpenAIMetadata (): Promise<any> {
+    try {
+      const response = await fetch( 'http://localhost:3000/api/model-metadata/refresh', {
+        method: 'POST'
+      } );
+
+      if ( response.status === 429 ) {
+        const errorData = await response.json();
+        throw new Error( errorData.message || 'Rate limit exceeded' );
+      }
+
+      if ( !response.ok ) {
+        throw new Error( `HTTP error! status: ${ response.status }` );
+      }
+
+      const result = await response.json();
+      this.cachedOpenAIMetadata = result.data;
+      console.log( '[ModelRegistry] Metadata refreshed:', result );
+
+      // Refresh models if we're on OpenAI provider
+      if ( this.selectedProviderSubject.value === 'openai' ) {
+        await this.refreshModels();
+      }
+
+      return result;
+    } catch ( error ) {
+      console.error( '[ModelRegistry] Failed to refresh metadata:', error );
+      throw error;
+    }
   }
 
   getEmbeddingModels (): Observable<ModelConfig[]> {
@@ -309,13 +368,45 @@ export class ModelRegistryService {
         if ( key ) {
           console.log( 'Fetching OpenAI models...' );
           const openAIModels = await this.openAIService.getModels( key );
-          models = openAIModels.map( m => ( {
-            id: m.id,
-            name: m.id,
-            type: 'chat',
-            provider: 'openai',
-            details: 'Cloud API'
-          } ) );
+          
+          // Helper to get metadata from cached backend data
+          const getMetadataFor = ( modelId: string ) => {
+            //Try exact match first
+            if ( this.cachedOpenAIMetadata?.models?.[modelId] ) {
+              return this.cachedOpenAIMetadata.models[modelId];
+            }
+            
+            // Try fuzzy match (e.g., "gpt-4o" matches "gpt-4o-2024-05-13")
+            if ( this.cachedOpenAIMetadata?.models ) {
+              for ( const [key, value] of Object.entries( this.cachedOpenAIMetadata.models ) ) {
+                if ( modelId.includes( key ) || key.includes( modelId ) ) {
+                  return value;
+                }
+              }
+            }
+            
+            // Fallback defaults
+            return {
+              contextLength: 'Unknown',
+              outputTokens: 'Unknown',
+              knowledgeCutoff: 'Unknown',
+              details: 'Cloud API'
+            };
+          };
+          
+          models = openAIModels.map( m => {
+            const meta = getMetadataFor( m.id );
+            return {
+              id: m.id,
+              name: m.id,
+              type: 'chat',
+              provider: 'openai',
+              details: meta.details || 'Cloud API',
+              contextLength: meta.contextLength,
+              outputTokens: meta.outputTokens,
+              knowledgeCutoff: meta.knowledgeCutoff
+            };
+          } );
         }
         // Fallback for embedding
         embeddingModels = this.browserEmbeddingModels;

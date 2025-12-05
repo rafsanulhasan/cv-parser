@@ -276,6 +276,21 @@ openDB<VectorDB>('ai-vector-db', 4, {
 });
 ```
 
+#### 8. ModelRegistry Service (`model-registry.service.ts`) - OpenAI Metadata
+
+**Dynamic Metadata Fetching:**
+```typescript
+// New methods for OpenAI model metadata
+async fetchOpenAIMetadata(): Promise<any>   // GET from backend
+async refreshOpenAIMetadata(): Promise<any> // POST refresh trigger
+private cachedOpenAIMetadata: any          // Local cache
+```
+
+**Metadata Application:**
+- Fuzzy matching for model IDs (handles versioned names like "gpt-4o-2024-05-13")
+- Injects contextLength, outputTokens, knowledgeCutoff into model configs
+- Falls back to defaults if backend unavailable
+
 #### 7. FileParsingService (`file-parsing.service.ts`)
 **Role:** Multi-format file parsing
 
@@ -377,6 +392,122 @@ const storage = multer.diskStorage({
     cb(null, Date.now() + '-' + file.originalname);
   }
 });
+```
+
+4. **Model Metadata** - `GET /api/model-metadata`
+   - Returns cached OpenAI model specifications
+   - Reads from `models-metadata.json`
+   - Fast lookup for frontend modal
+
+5. **Model Metadata Refresh** - `POST /api/model-metadata/refresh`
+   - Triggers immediate metadata update
+   - Rate limited: 5 minute cooldown
+   - Updates `models-metadata.json`
+   - Returns fresh data with timestamp
+
+**Scheduled Jobs:**
+```javascript
+// Daily metadata refresh at 3 AM
+cron.schedule('0 3 * * *', async () => {
+  await fetchAndUpdateModelMetadata();
+});
+```
+
+#### Metadata Fetcher (`utils/model-metadata-fetcher.js`)
+
+**Function:** `fetchAndUpdateModelMetadata()`
+- Updates JSON with latest OpenAI model specs
+- Currently uses verified Nov 2024 data
+- Ready for web scraping integration
+- Logs success/failure to console
+
+**Storage Format:**
+```json
+{
+  "lastUpdated": "2025-12-05T15:06:50.530Z",
+  "models": {
+    "gpt-4o": {
+      "contextLength": "128k",
+      "outputTokens": "16k",
+      "knowledgeCutoff": "Oct 2023",
+      "details": "High Intelligence"
+    }
+  }
+}
+```
+
+**Metadata System Architecture:**
+
+```mermaid
+sequenceDiagram
+    participant Cron as Scheduled Job<br/>(Daily 3 AM)
+    participant Fetcher as Metadata Fetcher
+    participant JSON as models-metadata.json
+    participant API as Backend API
+    participant Frontend as ModelRegistryService
+    participant Modal as Model Info Modal
+
+    Note over Cron,JSON: Automated Updates
+    Cron->>Fetcher: Trigger daily refresh
+    Fetcher->>Fetcher: Fetch latest specs
+    Fetcher->>JSON: Write updated metadata
+    
+    Note over Frontend,Modal: On-Demand Fetch
+    Frontend->>API: GET /api/model-metadata
+    API->>JSON: Read cached data
+    API-->>Frontend: Return {lastUpdated, models}
+    Frontend->>Frontend: Cache in memory
+    
+    Note over Modal,JSON: Manual Refresh
+    Modal->>Frontend: User clicks 🔄
+    Frontend->>API: POST /api/model-metadata/refresh
+    API->>API: Check rate limit (5 min)
+    API->>Fetcher: Trigger immediate refresh
+    Fetcher->>JSON: Update metadata
+    API-->>Frontend: Return fresh data + timestamp
+    Frontend->>Frontend: Update cache
+    Modal->>Modal: Display ⏳ → Show updated data
+```
+
+**Data Flow Diagram:**
+
+```mermaid
+graph TB
+    subgraph Backend
+        Cron[Scheduled Job<br/>node-cron]
+        Fetcher[Metadata Fetcher<br/>fetchAndUpdateModelMetadata]
+        JSON[models-metadata.json<br/>JSON Storage]
+        GetAPI[GET /api/model-metadata<br/>Fast Cached Read]
+        PostAPI[POST /api/model-metadata/refresh<br/>Manual Trigger + Rate Limit]
+    end
+    
+    subgraph Frontend
+        Service[ModelRegistryService<br/>fetchOpenAIMetadata<br/>refreshOpenAIMetadata]
+        Cache[cachedOpenAIMetadata<br/>In-Memory Cache]
+        Component[AppComponent<br/>refreshModelMetadata]
+        Modal[Model Info Modal<br/>🔄 Refresh Button]
+    end
+    
+    Cron -->|Daily 3 AM| Fetcher
+    Fetcher -->|Write| JSON
+    GetAPI -->|Read| JSON
+    PostAPI -->|Trigger| Fetcher
+    
+    Service -->|HTTP GET| GetAPI
+    GetAPI -->|JSON Response| Service
+    Service -->|Store| Cache
+    
+    Modal -->|Click 🔄| Component
+    Component -->|Call| Service
+    Service -->|HTTP POST| PostAPI
+    PostAPI -->|Fresh Data| Service
+    Service -->|Update| Cache
+    Cache -->|Display| Modal
+    
+    style Cron fill:#90EE90
+    style JSON fill:#FFD700
+    style Modal fill:#87CEEB
+    style Cache fill:#FFA500
 ```
 
 #### MCP Server (`mcp-server.js`)

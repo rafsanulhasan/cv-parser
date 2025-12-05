@@ -42,8 +42,9 @@ export class OpenAIService {
             if ( !response.ok ) throw new Error( 'Failed to fetch OpenAI models' );
 
             const data = await response.json();
-            // Filter for chat models usually relevant for this task
-            return ( data.data || [] ).filter( ( m: any ) => m.id.includes( 'gpt' ) );
+            console.log( 'OpenAI Models Response:', data );
+            // Filter for chat models (gpt) and embedding models
+            return ( data.data || [] ).filter( ( m: any ) => m.id.includes( 'gpt' ) || m.id.includes( 'embedding' ) );
         } catch ( e ) {
             console.error( 'Error fetching OpenAI models:', e );
             return [];

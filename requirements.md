@@ -889,3 +889,60 @@ upgrade(db, oldVersion, newVersion, transaction) {
 **Tasks**:
 
 - [x] Update `app.component.ts` to add `text-align: center` to the chat progress status paragraph.
+
+### 5.8 Model Information \u0026 Metadata
+
+#### Use Case 8.1: View Model Specifications
+
+**User Story 8.1.1: OpenAI Model Information Modal**:
+
+- **As** a user using OpenAI provider
+- **I want to** view detailed specifications for each model
+- **So that** I can understand capabilities (context length, output limits, knowledge cutoff) before processing my CV
+
+**Acceptance Criteria**:
+
+- Info icon (ℹ️) visible next to Chat Model and Embedding Model dropdowns when OpenAI provider selected
+- Clicking info icon opens modal with model specifications:
+  - **Context Length**: Model's input context window
+  - **Output Tokens**: Maximum output generation limit
+  - **Knowledge Cutoff**: Date of model's training data cutoff
+  - **Details**: Model category/description
+  - **Last Updated**: Timestamp of when metadata was last refreshed
+- Modal includes functional refresh button (🔄) to manually update metadata
+- Clicking refresh shows loading state (⏳) and updates timestamp
+- Metadata fetched from backend API, not hardcoded
+- Rate limiting prevents spam (max 1 refresh per 5 minutes)
+
+**Tasks**:
+
+- [x] Create backend scheduled job (cron daily at 3 AM)
+- [x] Create `/api/model-metadata` GET endpoint
+- [x] Create `/api/model-metadata/refresh` POST endpoint with rate limiting
+- [x] Add `models-metadata.json` storage
+- [x] Add metadata fetching methods to `ModelRegistryService`
+- [x] Add refresh button and timestamp to modal UI
+- [x] Fix metadata application bug (fuzzy matching for model IDs)
+- [x] Test with real OpenAI API key
+- [x] Verify refresh button functionality
+- [x] Verify "Last Updated" timestamp displays and updates
+
+**User Story 8.1.2: Automated Metadata Updates**:
+
+- **As** a system administrator
+- **I want** model metadata to update automatically
+- **So that** users always see current specifications without manual intervention
+
+**Acceptance Criteria**:
+
+- Backend server runs scheduled job daily at 3:00 AM
+- Job fetches latest model specifications and updates JSON storage
+- System logs successful/failed refresh attempts
+- Frontend automatically uses latest cached data on next session
+
+**Tasks**:
+
+- [x] Implement node-cron scheduler in backend
+- [x] Add logging for scheduled job execution
+- [x] Test scheduled job triggers correctly
+- [x] Verify JSON file updates automatically
