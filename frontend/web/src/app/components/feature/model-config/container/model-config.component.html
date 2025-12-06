@@ -1,0 +1,25 @@
+<div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; margin-bottom: 20px; overflow: hidden;">
+    <!-- Header / Toggle -->
+    <div (click)="toggleSettings.emit()"
+        style="padding: 15px; background: #e9ecef; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: bold;">
+        <span>⚙️ Model Configuration</span>
+        <span>{{ showSettings ? '▼' : '▶' }}</span>
+    </div>
+
+    <!-- Content -->
+    <div *ngIf="showSettings" style="padding: 20px; border-top: 1px solid #dee2e6;">
+        <!-- Provider Tabs -->
+        <div
+            style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #dee2e6; padding-bottom: 10px;">
+            <button *ngFor="let provider of providers" (click)="providerChange.emit(provider.id)"
+                [style.background]="selectedProvider === provider.id ? '#007bff' : 'transparent'"
+                [style.color]="selectedProvider === provider.id ? 'white' : '#333'"
+                style="padding: 8px 16px; border: none; border-radius: 20px; cursor: pointer; transition: all 0.2s ease;">
+                {{ provider.name }}
+            </button>
+        </div>
+
+        <!-- Content Transjection Slot -->
+        <ng-content></ng-content>
+    </div>
+</div>

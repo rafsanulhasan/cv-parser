@@ -105,7 +105,7 @@ export class ModelRegistryService {
   openAIKey$ = this.openAIKeySubject.asObservable();
 
   // Cache for OpenAI model metadata from backend
-  private cachedOpenAIMetadata: any = null;
+  public cachedOpenAIMetadata: any = null;
 
   constructor (
     private ollamaService: OllamaService,
@@ -368,23 +368,23 @@ export class ModelRegistryService {
         if ( key ) {
           console.log( 'Fetching OpenAI models...' );
           const openAIModels = await this.openAIService.getModels( key );
-          
+
           // Helper to get metadata from cached backend data
           const getMetadataFor = ( modelId: string ) => {
             //Try exact match first
-            if ( this.cachedOpenAIMetadata?.models?.[modelId] ) {
-              return this.cachedOpenAIMetadata.models[modelId];
+            if ( this.cachedOpenAIMetadata?.models?.[ modelId ] ) {
+              return this.cachedOpenAIMetadata.models[ modelId ];
             }
-            
+
             // Try fuzzy match (e.g., "gpt-4o" matches "gpt-4o-2024-05-13")
             if ( this.cachedOpenAIMetadata?.models ) {
-              for ( const [key, value] of Object.entries( this.cachedOpenAIMetadata.models ) ) {
+              for ( const [ key, value ] of Object.entries( this.cachedOpenAIMetadata.models ) ) {
                 if ( modelId.includes( key ) || key.includes( modelId ) ) {
                   return value;
                 }
               }
             }
-            
+
             // Fallback defaults
             return {
               contextLength: 'Unknown',
@@ -393,7 +393,7 @@ export class ModelRegistryService {
               details: 'Cloud API'
             };
           };
-          
+
           models = openAIModels.map( m => {
             const meta = getMetadataFor( m.id );
             return {

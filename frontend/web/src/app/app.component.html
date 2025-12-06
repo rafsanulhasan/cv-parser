@@ -1,0 +1,59 @@
+<div
+    style="font-family: 'Inter', system-ui, -apple-system, sans-serif; max-width: 900px; margin: 0 auto; padding: 20px; color: #333; line-height: 1.5;">
+    <header style="text-align: center; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 1px solid #eee;">
+        <h1 style="color: #2c3e50; margin: 0 0 10px 0;">CV Parser AI</h1>
+        <p style="color: #666; margin: 0;">Multi-Provider Document Extraction (Browser, Ollama, OpenAI)</p>
+    </header>
+
+    <!-- Model Configuration -->
+    <app-model-config [selectedProvider]="selectedProvider" [showSettings]="showSettings"
+        (toggleSettings)="toggleSettings()" (providerChange)="onProviderChange($event)">
+
+        <!-- Browser Config -->
+        <app-browser-config *ngIf="selectedProvider === 'browser'" [chatModels]="chatModels"
+            [embeddingModels]="embeddingModels" [selectedChatModelId]="selectedChatModel"
+            [selectedEmbeddingModelId]="selectedEmbeddingModel" (chatModelChange)="onChatModelChange($event)"
+            (embeddingModelChange)="onEmbeddingModelChange($event)">
+        </app-browser-config>
+
+        <!-- Ollama Config -->
+        <app-ollama-config *ngIf="selectedProvider === 'ollama'" [chatModels]="chatModels"
+            [embeddingModels]="embeddingModels" [selectedChatModelId]="selectedChatModel"
+            [selectedEmbeddingModelId]="selectedEmbeddingModel" [ollamaApiUrl]="ollamaApiUrl"
+            [isPulling]="embeddingPullProgress.status !== '' && embeddingPullProgress.status !== 'success'"
+            [pullProgress]="embeddingPullProgress.percent > 0 ? embeddingPullProgress : null"
+            [deleteConfirming]="confirmingEmbeddingDelete" (chatModelChange)="onChatModelChange($event)"
+            (embeddingModelChange)="onEmbeddingModelChange($event)" (apiUrlChange)="onOllamaApiUrlChange($event)"
+            (downloadModel)="onDownloadModel($event)" (deleteModel)="onDeleteModel($event)"
+            (cancelPull)="onCancelPull()">
+        </app-ollama-config>
+
+        <!-- OpenAI Config -->
+        <app-openai-config *ngIf="selectedProvider === 'openai'" [chatModels]="chatModels"
+            [embeddingModels]="embeddingModels" [selectedChatModelId]="selectedChatModel"
+            [selectedEmbeddingModelId]="selectedEmbeddingModel" [apiKey]="openaiApiKey"
+            [isRefreshing]="isRefreshingOpenAIMetadata"
+            [metadataLastUpdated]="modelRegistry.cachedOpenAIMetadata?.lastUpdated"
+            (chatModelChange)="onChatModelChange($event)" (embeddingModelChange)="onEmbeddingModelChange($event)"
+            (apiKeyChange)="onOpenAiApiKeyChange($event)" (saveKey)="saveOpenAIKey()" (removeKey)="removeOpenAIKey()"
+            (refreshMetadata)="refreshOpenAIMetadata()" (viewMetadata)="viewOpenAIMetadata($event)">
+        </app-openai-config>
+    </app-model-config>
+
+    <!-- Processing Status -->
+    <div *ngIf="statusMessages.length > 0"
+        style="margin-bottom: 20px; padding: 15px; background: #e8f5e9; border: 1px solid #c8e6c9; border-radius: 8px;">
+        <div *ngFor="let msg of statusMessages">{{ msg }}</div>
+    </div>
+
+    <!-- File Upload Area -->
+    <app-file-uploader [disabled]="isProcessing" [selectedFileType]="selectedFileType" [isProcessing]="isProcessing"
+        [progressPercent]="progressPercent" [modelLoadingProgress]="modelLoadingProgress" [steps]="steps"
+        (fileSelected)="onFileSelected($event)" (resetProgress)="resetProgress()">
+    </app-file-uploader>
+
+    <!-- Documents List -->
+    <app-document-list [documents]="documents" (delete)="deleteDocument($event)" (importData)="importData($event)"
+        (exportData)="exportData()">
+    </app-document-list>
+</div>

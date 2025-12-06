@@ -125,10 +125,20 @@
   - Worker: `pdfjsLib.GlobalWorkerOptions.workerSrc = './assets/pdf.worker.min.mjs'`
   - Page-by-page text extraction with concatenation
 
-### Frontend Component (`frontend/web/src/app/app.component.ts`)
+### Frontend Components (`frontend/web/src/app/components/`)
 
-#### **AppComponent**
-- **Role:** Main orchestrator, UI controller, state manager
+#### **AppComponent** (`app.component.ts`)
+- **Role:** Main orchestrator, Service integration, High-level state management
+- **Delegates to:**
+  - `ModelSelectComponent` (UI): Model dropdowns & actions
+  - `FileUploaderComponent` (UI): File input & progress visualization
+  - `DocumentListComponent` (Feature): Accordion view of processed CVs
+  - `ModelConfigComponent` (Feature): Settings container
+    - `BrowserConfigComponent`
+    - `OllamaConfigComponent`
+    - `OpenAiConfigComponent`
+
+#### **AppComponent State**
 - **Key State:**
   - `documents: any[]` - In-memory cache of stored documents
   - `steps: ProgressStep[]` - Pipeline step tracking
@@ -268,7 +278,12 @@
 - **Solution:** Backend proxy at `/models/*` adds auth, enables CORS
 - **Reference:** `server.js` proxy endpoint, `embedding.service.ts` env config
 
-### 5. Progress Callback Timing
+### 5. Angular Build Failure (sharp/onnxruntime)
+- **Issue**: Build fails resolving Node modules (`sharp`, `fs`, `path`) from transformers.js
+- **Solution**: Mock in `tsconfig.json` paths + `package.json` browser field + `src/app/mocks/sharp.mock.ts`
+- **Reference**: `tsconfig.json` ("paths"), `package.json` ("browser")
+
+### 6. Progress Callback Timing
 - **Issue:** High-frequency callbacks can freeze UI
 - **Solution:** Debounce updates, use `Math.min(100, ...)` to cap percent
 - **Reference:** All progress tracking code

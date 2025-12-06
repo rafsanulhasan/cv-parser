@@ -22,7 +22,24 @@
             "ES2022",
             "dom"
         ],
-        "skipLibCheck": true
+        "skipLibCheck": true,
+        "paths": {
+            "sharp": [
+                "src/app/mocks/sharp.mock.ts"
+            ],
+            "fs": [
+                "src/app/mocks/sharp.mock.ts"
+            ],
+            "path": [
+                "src/app/mocks/sharp.mock.ts"
+            ],
+            "os": [
+                "src/app/mocks/sharp.mock.ts"
+            ],
+            "onnxruntime-node": [
+                "src/app/mocks/sharp.mock.ts"
+            ]
+        }
     },
     "angularCompilerOptions": {
         "enableI18nLegacyMessageIdFormat": false,

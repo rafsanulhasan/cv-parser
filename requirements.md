@@ -946,3 +946,38 @@ upgrade(db, oldVersion, newVersion, transaction) {
 - [x] Add logging for scheduled job execution
 - [x] Test scheduled job triggers correctly
 - [x] Verify JSON file updates automatically
+
+### 5.9 Code Maintenance
+
+#### Use Case 9.1: Component Modularization
+
+**User Story 9.1.1: Refactor AppComponent**:
+
+- **As** a developer
+- **I want** to decompose the monolithic `AppComponent` into smaller, reusable components
+- **So that** the codebase is maintainable, testable, and follows SOLID principles
+
+**Acceptance Criteria**:
+
+- `AppComponent` HTML extracted to `app.component.html`
+- UI elements moved to dedicated components:
+  - `ModelSelectComponent`
+  - `FileUploaderComponent`
+  - `DocumentListComponent`
+- Feature configuration moved to dedicated components:
+  - `BrowserConfigComponent`
+  - `OllamaConfigComponent`
+  - `OpenAiConfigComponent`
+  - `ModelConfigComponent` (Container)
+- Unit tests created for all new components
+- Build passes (`npm run build`)
+- Functionality remains unchanged (manual regression test passed)
+
+**Tasks**:
+
+- [x] Extract `app.component.html`.
+- [x] Create and implement UI components (`ModelSelect`, `FileUploader`, `DocumentList`).
+- [x] Create and implement Feature components (`BrowserConfig`, `OllamaConfig`, `OpenAiConfig`, `ModelConfig`).
+- [x] Refactor `AppComponent` to orchestrate child components.
+- [x] Fix build issues related to `sharp`/`onnxruntime-node`.
+- [x] Verify application references and functionality.

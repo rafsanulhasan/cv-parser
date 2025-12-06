@@ -1,0 +1,49 @@
+<div style="background: white; padding: 15px; border-radius: 4px; border: 1px solid #ccc;">
+    <div style="margin-bottom: 20px;">
+        <label style="display: block; font-weight: bold; margin-bottom: 5px;">Ollama API URL</label>
+        <input type="text" [ngModel]="ollamaApiUrl" (ngModelChange)="apiUrlChange.emit($event)"
+            placeholder="http://localhost:11434"
+            style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+        <small style="color: #666; display: block; margin-top: 5px;">
+            Default: http://localhost:11434 (Make sure 'ollama serve' is running)
+        </small>
+    </div>
+
+    <!-- Embedding Model -->
+    <app-model-select label="Embedding Model" [models]="embeddingModels" [selectedModelId]="selectedEmbeddingModelId"
+        (modelChange)="embeddingModelChange.emit($event)" [showDownload]="true" [showDelete]="true"
+        [isInstalled]="selectedEmbeddingModel?.isInstalled ?? false" [isPulling]="isPulling"
+        [deleteConfirming]="deleteConfirming" (download)="onEmbeddingModelDownload()"
+        (delete)="onEmbeddingModelDelete()" (cancelPull)="cancelPull.emit()">
+    </app-model-select>
+
+    <!-- Chat Model -->
+    <app-model-select label="Chat Model" [models]="chatModels" [selectedModelId]="selectedChatModelId"
+        (modelChange)="chatModelChange.emit($event)" [showDownload]="true" [showDelete]="true"
+        [isInstalled]="selectedChatModel?.isInstalled ?? false" [isPulling]="isPulling"
+        [deleteConfirming]="deleteConfirming" (download)="onChatModelDownload()" (delete)="onChatModelDelete()"
+        (cancelPull)="cancelPull.emit()">
+    </app-model-select>
+
+    <!-- Pull Progress -->
+    <div *ngIf="isPulling"
+        style="margin-top: 15px; padding: 10px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+            <span style="font-weight: bold;">{{ pullProgress?.status }}</span>
+            <span>{{ pullProgress?.percent }}%</span>
+        </div>
+        <div style="height: 10px; background: #e9ecef; border-radius: 2px;">
+            <div [style.width.%]="pullProgress?.percent"
+                style="height: 100%; background: #007bff; border-radius: 2px; transition: width 0.3s ease;"></div>
+        </div>
+        <div *ngIf="pullProgress?.total" style="text-align: right; font-size: 0.8em; color: #666; margin-top: 5px;">
+            {{ (pullProgress?.completed / 1024 / 1024 / 1024) | number:'1.1-2' }} GB /
+            {{ (pullProgress?.total / 1024 / 1024 / 1024) | number:'1.1-2' }} GB
+        </div>
+    </div>
+
+    <div
+        style="margin-top: 15px; padding: 10px; background: #fff3cd; color: #856404; border-radius: 4px; font-size: 0.9em; border: 1px solid #ffeeba;">
+        <strong>Note:</strong> Ollama runs locally. Ensure you have Ollama installed and running.
+    </div>
+</div>

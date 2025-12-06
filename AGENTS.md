@@ -314,6 +314,26 @@ steps: ProgressStep[] = [
 5. **Export/Import**: Export database, clear IndexedDB, import, verify all documents restored
 6. **Offline Mode**: Disconnect network, verify browser mode still works with cached models
 
+- **Offline Mode**: Disconnect network, verify browser mode still works with cached models
+
+### Angular Build with Backend Dependencies (sharp, onnxruntime-node)
+**Problem**: Libraries like `@xenova/transformers` and `@mlc-ai/web-llm` often have optional dependencies on Node.js-only packages (`sharp`, `onnxruntime-node`). Angular's webpack-based build tries to bundle these, causing resolution errors or massive bundle sizes.
+**Solution**: Explicitly mock these modules in `tsconfig.json` and exclude them in `package.json`.
+1. **Mock File (`src/app/mocks/sharp.mock.ts`):** `export default {};`
+2. **`tsconfig.json` Path Mappings**: Map `sharp`, `fs`, `path`, `os`, `onnxruntime-node` to the mock.
+3. **`package.json` Browser Field**: Set `sharp`, `fs`, etc. to `false`.
+4. **Build Budget**: Increase `maximumError` to 10MB in `angular.json`.
+
+- **Offline Mode**: Disconnect network, verify browser mode still works with cached models
+
+### Angular Build with Backend Dependencies (sharp, onnxruntime-node)
+**Problem**: Libraries like `@xenova/transformers` and `@mlc-ai/web-llm` often have optional dependencies on Node.js-only packages (`sharp`, `onnxruntime-node`). Angular's webpack-based build tries to bundle these, causing resolution errors or massive bundle sizes.
+**Solution**: Explicitly mock these modules in `tsconfig.json` and exclude them in `package.json`.
+1. **Mock File (`src/app/mocks/sharp.mock.ts`):** `export default {};`
+2. **`tsconfig.json` Path Mappings**: Map `sharp`, `fs`, `path`, `os`, `onnxruntime-node` to the mock.
+3. **`package.json` Browser Field**: Set `sharp`, `fs`, etc. to `false`.
+4. **Build Budget**: Increase `maximumError` to 10MB in `angular.json`.
+
 ## Security Considerations
 - **API Keys**: Stored in localStorage (user responsibility)
 - **Data Isolation**: IndexedDB sandboxed per origin

@@ -12,6 +12,10 @@
 
 ### Frontend
 - **Framework:** Angular 17 (Standalone Components)
+- **Component Architecture:**
+  - **Feature Components:** `ModelConfig`, `BrowserConfig`, `OllamaConfig`, `OpenAiConfig`, `DocumentList`
+  - **UI Components:** `ModelSelect`, `FileUploader`
+  - **Container:** `AppComponent` (Orchestrator)
 - **State Management:** RxJS Observables (BehaviorSubjects in services)
 - **Modules:** CommonModule, FormsModule
 - **Storage:** IndexedDB via `idb` v8.0.0
