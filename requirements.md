@@ -1040,3 +1040,63 @@ upgrade(db, oldVersion, newVersion, transaction) {
 - [x] Implement `ModelRegistryService.getAvailableModels(provider)` logic (or similar).
 - [x] Implement Add logic for each provider type.
 - [x] Implement local storage persistence for "User Added" OpenAI models (via `ModelRegistryService`).
+
+#### Use Case 10.3: Configure OpenAI API Key (BYOM)
+
+**User Story 10.3.1: Bring Your Own Model (BYOM) Modal**:
+
+- **As** a user without an OpenAI API key configured
+- **I want** to see a clear message and action button in the dropdown
+- **So that** I can easily configure my API key to access OpenAI models
+
+**Acceptance Criteria**:
+
+- **No Key State**: When no OpenAI API key is saved:
+    - The OpenAI section in the dropdown shows message: "No OpenAI API key configured."
+    - A "Bring Your Own Model (BYOM)" button is displayed below the message
+- **BYOM Modal UI**:
+    - Title: "Configure OpenAI API Key"
+    - Password-style input field with show/hide toggle
+    - Link to OpenAI Platform (https://platform.openai.com/api-keys)
+    - "Save & Connect" button (disabled until key is entered)
+    - "Cancel" button to close modal
+- **Save Action**: 
+    - Saves API key to localStorage via `ModelRegistryService`
+    - Refreshes model list to fetch OpenAI models
+    - Closes modal on success
+- **Post-Configuration**: OpenAI models appear in dropdown with metadata badges
+
+**Tasks**:
+
+- [x] Create `OpenAIKeyModalComponent` with form and styling.
+- [x] Add `noKeyConfigured` and `message` fields to subgroup type in `getUnifiedChatModels()`.
+- [x] Update `SmartDropdownComponent` to render message and BYOM button conditionally.
+- [x] Wire `openBYOM` event to open the modal from `AppComponent`.
+- [x] Implement key saving and model refresh on modal save.
+
+#### Use Case 10.4: Model Metadata Display
+
+**User Story 10.4.1: Enhanced Metadata Badges**:
+
+- **As** a user
+- **I want** to see relevant metadata (context length, output tokens, details) for each model
+- **So that** I can make informed decisions about which model to use
+
+**Acceptance Criteria**:
+
+- **Metadata Badges**: Each model item in the dropdown shows applicable badges:
+    - Context length (e.g., "128k ctx")
+    - Output tokens (e.g., "16k out")
+    - Model size (e.g., "2.3 GB")
+    - Quantization (e.g., "Q4_K_M")
+    - Details (e.g., "High Intelligence", "Fast & Smart")
+- **Hidden Values**: Badges with "Unknown" or "N/A" values are not displayed
+- **Static Fallbacks**: Common OpenAI models have fallback metadata when backend cache unavailable
+
+**Tasks**:
+
+- [x] Add `contextLength`, `outputTokens`, `sizeBytes` to `ModelConfig` interface.
+- [x] Add static metadata map for common OpenAI models in `getUnifiedChatModels()`.
+- [x] Update `SmartDropdownComponent` template to render metadata badges.
+- [x] Add `formatNumber()` and `formatSize()` helper methods.
+- [x] Filter out "Unknown" and "N/A" values from badge display.

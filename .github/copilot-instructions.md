@@ -234,6 +234,20 @@
   - JSON: Green (#28a745)
 - **Accordion:** Collapsible document cards with summary + detail view
 - **Settings Panel:** Collapsible with tab navigation
+- **BYOM Modal:** `OpenAIKeyModalComponent` for API key configuration when no key set
+- **Smart Dropdown:** 3-level hierarchy (Category → Provider → Models) with metadata badges
+
+### OpenAI BYOM (Bring Your Own Model) Modal
+When no OpenAI API key is configured:
+1. OpenAI dropdown section shows: "No OpenAI API key configured."
+2. BYOM button opens modal with: password input, show/hide toggle, OpenAI Platform link
+3. On save: Key stored via `ModelRegistryService.setOpenAIKey()`, models refetched
+
+### Metadata Badge Display
+- **Context length**: "128k ctx"
+- **Output tokens**: "16k out"
+- **Details**: "High Intelligence"
+- **Filtering**: Hide badges with "Unknown" or "N/A" values
 
 ## Common Tasks & Patterns
 

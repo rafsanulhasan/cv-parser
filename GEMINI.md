@@ -464,6 +464,71 @@ if (!this.confirming) {
 // Proceed with action
 ```
 
+### 12. OpenAI BYOM (Bring Your Own Model) Modal
+
+**Problem**: Users without an OpenAI API key need a clear path to configure one without hunting through settings.
+
+**Solution**: Show message and BYOM button directly in the dropdown when no key is configured.
+
+**Implementation**:
+
+1. **`ModelRegistryService.getUnifiedChatModels()`**:
+   - Returns `noKeyConfigured: boolean` and `message: string` for OpenAI subgroup when no key set
+   - Static metadata fallback for common OpenAI models (gpt-4o, gpt-4o-mini, etc.)
+
+2. **`SmartDropdownComponent`**:
+   - Conditionally renders message + BYOM button when `subgroup.noKeyConfigured` is true
+   - Emits `openBYOM` event when button clicked
+
+3. **`OpenAIKeyModalComponent`** (`components/ui/openai-key-modal/`):
+   - Password input with show/hide toggle
+   - Link to OpenAI Platform for key generation
+   - Saves key via `ModelRegistryService.setOpenAIKey()`
+   - Calls `refreshModels()` on save to fetch OpenAI models
+
+**Pattern** (Dropdown template):
+```html
+<!-- Show message and BYOM button if no API key configured -->
+<div *ngIf="subgroup.noKeyConfigured" class="no-key-message">
+  <span class="message-text">{{ subgroup.message }}</span>
+  <button class="byom-button" (click)="openBYOM.emit(); $event.stopPropagation()">
+    Bring Your Own Model (BYOM)
+  </button>
+</div>
+```
+
+### 13. Metadata Badge Display Filtering
+
+**Problem**: Models without complete metadata show "Unknown" or "N/A" badges, which is confusing.
+
+**Solution**: Filter out badges with placeholder values in the template.
+
+**Pattern** (SmartDropdown template):
+```html
+<span *ngIf="model.contextLength && model.contextLength !== 'Unknown' && model.contextLength !== 'N/A'" 
+      class="item-badge">{{ formatNumber(model.contextLength) }} ctx</span>
+<span *ngIf="model.outputTokens && model.outputTokens !== 'Unknown' && model.outputTokens !== 'N/A'" 
+      class="item-badge">{{ formatNumber(model.outputTokens) }} out</span>
+<span *ngIf="model.details && model.details !== 'Unknown' && model.details !== 'N/A'" 
+      class="item-badge details">{{ model.details }}</span>
+```
+
+**formatNumber() helper**:
+```typescript
+formatNumber(value: string | number | undefined): string {
+  if (!value) return '';
+  // If already formatted (e.g., "128k"), return as-is
+  if (typeof value === 'string' && /[kmb]/i.test(value)) {
+    return value;
+  }
+  // Otherwise format number
+  const num = typeof value === 'string' ? parseInt(value, 10) : value;
+  if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+  if (num >= 1000) return (num / 1000).toFixed(0) + 'k';
+  return num.toString();
+}
+```
+
 ## UI Testing Process
 
 ### Automated Testing Setup

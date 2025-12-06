@@ -14,7 +14,7 @@
 - **Framework:** Angular 17 (Standalone Components)
 - **Component Architecture:**
   - **Feature Components:** `ModelConfig`, `BrowserConfig`, `OllamaConfig`, `OpenAiConfig`, `DocumentList`
-  - **UI Components:** `ModelSelect`, `FileUploader`
+  - **UI Components:** `SmartDropdown`, `FileUploader`, `AddModelModal`, `OpenAIKeyModal`
   - **Container:** `AppComponent` (Orchestrator)
 - **State Management:** RxJS Observables (BehaviorSubjects in services)
 - **Modules:** CommonModule, FormsModule

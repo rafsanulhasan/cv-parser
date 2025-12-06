@@ -269,6 +269,30 @@ steps: ProgressStep[] = [
 - **Provider Tabs**: Browser (Beta) | Ollama (Local) | OpenAI (Cloud)
 - **Model Grouping**: "Installed Models (Ready)" vs "Available to Download"
 
+### OpenAI BYOM (Bring Your Own Model) Modal
+When no OpenAI API key is configured:
+1. OpenAI dropdown section shows: "No OpenAI API key configured."
+2. BYOM button opens `OpenAIKeyModalComponent` with:
+   - Password input with show/hide toggle
+   - Link to OpenAI Platform for key generation
+   - Save & Connect button
+3. On save: Key stored via `ModelRegistryService.setOpenAIKey()`, models refetched
+
+**Files**: `components/ui/openai-key-modal/` (TS, HTML, CSS)
+
+### Metadata Badge Display
+Model metadata shown as badges in dropdown:
+- **Context length**: "128k ctx"
+- **Output tokens**: "16k out"
+- **Details**: "High Intelligence"
+
+**Filtering**: Hide badges with "Unknown" or "N/A" values:
+```html
+<span *ngIf="model.contextLength && model.contextLength !== 'Unknown' && model.contextLength !== 'N/A'">
+  {{ formatNumber(model.contextLength) }} ctx
+</span>
+```
+
 ## Code Style & Best Practices
 - **Angular**: Use Standalone Components with explicit imports
 - **RxJS**: Observables for reactive state (BehaviorSubjects in services)

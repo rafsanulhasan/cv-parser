@@ -243,3 +243,34 @@ onChatModelChange(modelId: string) {
 - **UI**: Top-level dropdown driven by `unifiedChatModels`.
 - **Service**: `ModelRegistryService.getUnifiedChatModels()` aggregates models from all providers into grouped categories.
 - **State**: `selectedProvider` and `selectedChatModel` are synced. Switching key in dropdown triggers both updates.
+
+### OpenAI BYOM (Bring Your Own Model) Modal
+
+When no OpenAI API key is configured:
+
+1. **Dropdown shows message**: "No OpenAI API key configured."
+2. **BYOM button**: Opens `OpenAIKeyModalComponent` for key configuration
+3. **Modal features**:
+   - Password input with show/hide toggle
+   - Link to OpenAI Platform
+   - "Save & Connect" button
+4. **On save**: Key stored via `ModelRegistryService.setOpenAIKey()`, models refetched
+
+**Files**:
+- `components/ui/openai-key-modal/` - Modal component (TS, HTML, CSS)
+- `SmartDropdownComponent` - Emits `openBYOM` event
+- `AppComponent` - Handles `isOpenAIKeyModalOpen` state
+
+### Metadata Badge Display
+
+Model metadata shown as badges in dropdown:
+- **Context length**: e.g., "128k ctx"
+- **Output tokens**: e.g., "16k out"
+- **Details**: e.g., "High Intelligence"
+
+**Filtering**: Hide badges with "Unknown" or "N/A" values:
+```html
+<span *ngIf="model.contextLength && model.contextLength !== 'Unknown' && model.contextLength !== 'N/A'" 
+      class="item-badge">{{ formatNumber(model.contextLength) }} ctx</span>
+```
+
