@@ -32,8 +32,8 @@ CV Parser: Multi-provider CV analysis app using Angular 17, Node.js, and three A
 - **POST /extract**: MCP-based structured data extraction via OpenAI
 
 ## Development Commands
-- **Frontend**: `cd cv-parser && npm start` → http://localhost:4200
-- **Backend**: `cd cv-parser-backend && npm start` → http://localhost:3000
+- **Frontend**: `cd frontend/web && npm start` → http://localhost:4200
+- **Backend**: `cd backend && npm start` → http://localhost:3000
 - **Ollama**: `ollama serve` (required for Ollama mode)
 
 ## Coding Guidelines

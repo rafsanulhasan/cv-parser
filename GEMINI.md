@@ -17,14 +17,14 @@ Multi-provider CV analysis tool. Angular 17 frontend, Node.js backend, three AI 
 
 **Implementation**:
 
-1. **Backend (`cv-parser-backend/`):**
+1. **Backend (`backend/`):**
    - `models-metadata.json` - JSON storage for model specs
    - `utils/model-metadata-fetcher.js` - Metadata update logic
    - `GET /api/model-metadata` - Fast cached data endpoint
    - `POST /api/model-metadata/refresh` - Manual trigger with rate limiting (5min)
    - `node-cron` scheduler - Daily 3 AM refresh
 
-2. **Frontend (`cv-parser/src/app/services/`):**
+2. **Frontend (`frontend/web/src/app/services/`):**
    - `ModelRegistryService.fetchOpenAIMetadata()` - GET from backend
    - `ModelRegistryService.refreshOpenAIMetadata()` - POST refresh
    - `cachedOpenAIMetadata` - Local cache for fast lookups
@@ -67,7 +67,7 @@ curl http://localhost:3000/api/model-metadata
 curl -X POST http://localhost:3000/api/model-metadata/refresh
 
 # Check JSON file
-cat cv-parser-backend/models-metadata.json
+cat backend/models-metadata.json
 ```
 
 **Common Error**: Modal shows "Unknown" for all fields
@@ -483,11 +483,11 @@ if (!this.confirming) {
 
    ```powershell
    # Terminal 1: Backend
-   cd cv-parser-backend
+   cd backend
    npm start
    
    # Terminal 2: Frontend
-   cd cv-parser
+   cd frontend/web
    npm start
    ```
 

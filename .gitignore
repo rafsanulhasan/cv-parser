@@ -1,7 +1,7 @@
 # Backend
-cv-parser-backend/uploads
-cv-parser-backend/node_modules
+backend/uploads
+backend/node_modules
 
 # Frontend
-cv-parser/.angular/cache/17.3.17/cv-parser/.tsbuildinfo
-cv-parser/node_modules
+frontend/web/.angular/cache/17.3.17/frontend/.tsbuildinfo
+frontend/web/node_modules

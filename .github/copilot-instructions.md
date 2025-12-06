@@ -28,7 +28,7 @@
 
 ## Architecture
 
-### Frontend Services (`cv-parser/src/app/services/`)
+### Frontend Services (`frontend/web/src/app/services/`)
 
 #### 1. **ModelRegistryService** (`model-registry.service.ts`)
 - **Role:** Centralized model configuration and state management
@@ -125,7 +125,7 @@
   - Worker: `pdfjsLib.GlobalWorkerOptions.workerSrc = './assets/pdf.worker.min.mjs'`
   - Page-by-page text extraction with concatenation
 
-### Frontend Component (`cv-parser/src/app/app.component.ts`)
+### Frontend Component (`frontend/web/src/app/app.component.ts`)
 
 #### **AppComponent**
 - **Role:** Main orchestrator, UI controller, state manager
@@ -170,7 +170,7 @@
   - Document accordion with SVG file icons
   - Export/Import functionality
 
-### Backend (`cv-parser-backend/`)
+### Backend (`backend/`)
 
 #### **Express Server** (`server.js`)
 - **Endpoints:**
@@ -274,8 +274,8 @@
 - **Reference:** All progress tracking code
 
 ## Development Commands
-- **Frontend:** `cd cv-parser && npm start` → http://localhost:4200
-- **Backend:** `cd cv-parser-backend && npm start` → http://localhost:3000
+- **Frontend:** `cd frontend/web && npm start` → http://localhost:4200
+- **Backend:** `cd backend && npm start` → http://localhost:3000
 - **Ollama:** `ollama serve` (required for Ollama mode)
 
 ## Testing Scenarios

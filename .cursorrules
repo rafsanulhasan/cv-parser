@@ -116,8 +116,8 @@ localStorage: `selectedProvider`, `selectedEmbeddingModel`, `selectedChatModel`,
 
 ## Development
 ```bash
-cd cv-parser && npm start          # Frontend :4200
-cd cv-parser-backend && npm start  # Backend :3000
+cd frontend/web && npm start          # Frontend :4200
+cd backend && npm start  # Backend :3000
 ollama serve                        # Ollama mode
 ```
 

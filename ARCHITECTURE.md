@@ -53,7 +53,7 @@
 
 ## Architecture
 
-### Frontend Services (`cv-parser/src/app/services/`)
+### Frontend Services (`frontend/web/src/app/services/`)
 
 #### 1. ModelRegistryService (`model-registry.service.ts`)
 **Role:** Centralized model configuration and state management
@@ -310,7 +310,7 @@ import * as pdfjsLib from 'pdfjs-dist';
 pdfjsLib.GlobalWorkerOptions.workerSrc = './assets/pdf.worker.min.mjs';
 ```
 
-### Frontend Component (`cv-parser/src/app/app.component.ts`)
+### Frontend Component (`frontend/web/src/app/app.component.ts`)
 
 #### AppComponent
 **Role:** Main orchestrator, UI controller, state manager
@@ -358,7 +358,7 @@ steps = [
 - ✓ Completed (green)
 - ✗ Error (red)
 
-### Backend (`cv-parser-backend/`)
+### Backend (`backend/`)
 
 #### Express Server (`server.js`)
 
@@ -766,12 +766,12 @@ app.get('/models/*', async (req, res) => {
 ### Commands
 ```bash
 # Frontend (port 4200)
-cd cv-parser
+cd frontend/web
 npm install
 npm start
 
 # Backend (port 3000)
-cd cv-parser-backend
+cd backend
 npm install
 npm start
 
