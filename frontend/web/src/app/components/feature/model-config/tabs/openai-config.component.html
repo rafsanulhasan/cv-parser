@@ -11,15 +11,10 @@
         </div>
     </div>
 
-    <app-model-select label="Embedding Model" [models]="embeddingModels" [selectedModelId]="selectedEmbeddingModelId"
-        (modelChange)="embeddingModelChange.emit($event)" [showInfoButton]="true"
+    <app-smart-dropdown label="Embedding Model" [models]="embeddingModels" [selectedModelId]="selectedEmbeddingModelId"
+        (modelChange)="embeddingChange.emit($event)" [showInfoButton]="true"
         (infoClick)="viewMetadata.emit(selectedEmbeddingModelId)">
-    </app-model-select>
-
-    <app-model-select label="Chat Model" [models]="chatModels" [selectedModelId]="selectedChatModelId"
-        (modelChange)="chatModelChange.emit($event)" [showInfoButton]="true"
-        (infoClick)="viewMetadata.emit(selectedChatModelId)">
-    </app-model-select>
+    </app-smart-dropdown>
 
     <div
         style="margin-top: 15px; padding-top: 10px; border-top: 1px dashed #ccc; display: flex; justify-content: space-between; align-items: center;">

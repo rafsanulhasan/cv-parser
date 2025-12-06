@@ -2,12 +2,12 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ModelConfig } from '../../../../services/model-registry.service';
-import { ModelSelectComponent } from '../../../ui/model-select/model-select.component';
+import { SmartDropdownComponent } from '../../../ui/smart-dropdown/smart-dropdown.component';
 
 @Component( {
     selector: 'app-ollama-config',
     standalone: true,
-    imports: [ CommonModule, FormsModule, ModelSelectComponent ],
+    imports: [ CommonModule, FormsModule, SmartDropdownComponent ],
     templateUrl: './ollama-config.component.html'
 } )
 export class OllamaConfigComponent {

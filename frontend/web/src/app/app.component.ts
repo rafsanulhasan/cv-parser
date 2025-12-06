@@ -16,6 +16,9 @@ import { ModelConfigComponent } from './components/feature/model-config/containe
 import { BrowserConfigComponent } from './components/feature/model-config/tabs/browser-config.component';
 import { OllamaConfigComponent } from './components/feature/model-config/tabs/ollama-config.component';
 import { OpenAiConfigComponent } from './components/feature/model-config/tabs/openai-config.component';
+import { AddModelModalComponent } from './components/ui/add-model-modal/add-model-modal.component';
+import { SmartDropdownComponent } from './components/ui/smart-dropdown/smart-dropdown.component';
+import { OpenAIKeyModalComponent } from './components/ui/openai-key-modal/openai-key-modal.component';
 
 @Component( {
   selector: 'app-root',
@@ -27,7 +30,10 @@ import { OpenAiConfigComponent } from './components/feature/model-config/tabs/op
     ModelConfigComponent,
     BrowserConfigComponent,
     OllamaConfigComponent,
-    OpenAiConfigComponent
+    OpenAiConfigComponent,
+    AddModelModalComponent,
+    SmartDropdownComponent,
+    OpenAIKeyModalComponent
   ],
   templateUrl: './app.component.html',
   styleUrls: [ './app.component.css' ]
@@ -41,6 +47,10 @@ export class AppComponent implements OnInit, OnDestroy {
   modelLoadingProgress = '';
   showSettings = false;
   selectedFileType: string | null = null;
+
+  // Add Model Modal State
+  isAddModelModalOpen = false;
+  isOpenAIKeyModalOpen = false;
 
   // Pipeline Steps
   steps: ProgressStep[] = [
@@ -61,8 +71,11 @@ export class AppComponent implements OnInit, OnDestroy {
   openaiApiKey = '';
 
   // Model Lists (Unified, handled by Registry)
-  chatModels: ModelConfig[] = [];
+  chatModels: ModelConfig[] = []; // Keep for backward compatibility/internal use if needed
+  unifiedChatModels: { label: string; subgroups: { label: string; options: ModelConfig[]; noKeyConfigured?: boolean; message?: string }[] }[] = []; // For Dropdown
   embeddingModels: ModelConfig[] = [];
+
+  private subscriptions: Subscription[] = [];
 
   // Async Operations State
   embeddingPullProgress: { percent: number, status: string, completed: number, total: number } = { percent: 0, status: '', completed: 0, total: 0 };
@@ -70,8 +83,6 @@ export class AppComponent implements OnInit, OnDestroy {
   confirmingEmbeddingDelete = false;
   embeddingDeleteTimeout: any;
   isRefreshingOpenAIMetadata = false;
-
-  private subscriptions: Subscription[] = [];
 
   constructor (
     private fileParsingService: FileParsingService,
@@ -89,8 +100,10 @@ export class AppComponent implements OnInit, OnDestroy {
 
     // Subscribe to Model Registry changes
     this.subscriptions.push(
-      this.modelRegistry.chatModels$.subscribe( models => {
+      this.modelRegistry.chatModels$.subscribe( async models => {
         this.chatModels = models;
+        // Also refresh unified list
+        this.unifiedChatModels = await this.modelRegistry.getUnifiedChatModels();
         this.cdr.detectChanges();
       } ),
       this.modelRegistry.embeddingModels$.subscribe( models => {
@@ -99,7 +112,7 @@ export class AppComponent implements OnInit, OnDestroy {
       } ),
       this.modelRegistry.selectedProvider$.subscribe( provider => {
         this.selectedProvider = provider;
-        this.ollamaApiUrl = 'http://localhost:11434'; // Default reset or load from local storage if we tracked it separately
+        this.ollamaApiUrl = 'http://localhost:11434';
       } ),
       this.modelRegistry.selectedEmbeddingModel$.subscribe( model => this.selectedEmbeddingModel = model ),
       this.modelRegistry.selectedChatModel$.subscribe( model => this.selectedChatModel = model ),
@@ -113,16 +126,67 @@ export class AppComponent implements OnInit, OnDestroy {
 
   // --- Model Management Logic ---
 
+  async refreshModels () {
+    await this.modelRegistry.refreshModels();
+    this.unifiedChatModels = await this.modelRegistry.getUnifiedChatModels();
+    this.cdr.detectChanges();
+  }
+
   onProviderChange ( providerId: string ) {
     this.modelRegistry.setProvider( providerId as ModelProvider );
   }
 
   onChatModelChange ( modelId: string ) {
+    // Find provider from unified list (nested structure)
+    let provider: ModelProvider | undefined;
+    for ( const category of this.unifiedChatModels ) {
+      for ( const subgroup of category.subgroups ) {
+        const model = subgroup.options.find( m => m.id === modelId );
+        if ( model ) {
+          provider = model.provider;
+          break;
+        }
+      }
+      if ( provider ) break;
+    }
+
+    if ( provider && provider !== this.selectedProvider ) {
+      this.modelRegistry.setProvider( provider );
+    }
     this.modelRegistry.setChatModel( modelId );
   }
 
   onEmbeddingModelChange ( modelId: string ) {
     this.modelRegistry.setEmbeddingModel( modelId );
+  }
+
+  get isChatModelInstalled (): boolean {
+    const model = this.chatModels.find( m => m.id === this.selectedChatModel );
+    return model?.isInstalled ?? false;
+  }
+
+  get isSelectedChatModelOllama (): boolean {
+    const model = this.chatModels.find( m => m.id === this.selectedChatModel );
+    return model?.provider === 'ollama'; // or model.provider
+  }
+
+  // --- Modal Logic ---
+  openAddModelModal () {
+    this.isAddModelModalOpen = true;
+  }
+
+  closeAddModelModal () {
+    this.isAddModelModalOpen = false;
+  }
+
+  onModelAddedFromModal ( modelId: string ) {
+    if ( this.selectedProvider === 'ollama' ) {
+      this.onDownloadModel( { id: modelId, type: 'chat' } );
+    } else {
+      // For OpenAI, it's already added. Just refresh list.
+      this.modelRegistry.refreshModels();
+    }
+    this.closeAddModelModal();
   }
 
   onOllamaApiUrlChange ( url: string ) {

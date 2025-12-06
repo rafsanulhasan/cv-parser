@@ -551,4 +551,38 @@ export default {};
 Increase `maximumError` budget (e.g., to 10MB) to accommodate large ML libraries if necessary.
 
 **5. Manual cleanup:**
-If specific node modules persist in causing errors, you may need to manually delete them from `node_modules` (e.g., `rm -rf node_modules/sharp`) if the tokenizer or other tools don't respect the excludes.
+### 13. Unified Model Selection Architecture
+
+**Problem**: Users found it confusing to switch tabs to select models.
+
+**Solution**: A single "Smart Dropdown" at the top level (`ModelConfigComponent`) that controls the provider and specific model.
+
+**Key Logic**: `AppComponent.onChatModelChange` finds the model in the unified list, determines the provider, switches the provider if necessary, and sets the model.
+
+**Implementation Logic** (`AppComponent.onChatModelChange`):
+```typescript
+onChatModelChange(modelId: string) {
+  // 1. Find the provider associated with this model ID from the unified list
+  let provider: ModelProvider | undefined;
+  for (const group of this.unifiedChatModels) {
+    const model = group.options.find(m => m.id === modelId);
+    if (model) {
+      provider = model.provider;
+      break;
+    }
+  }
+
+  // 2. Switch provider context if it changed
+  if (provider && provider !== this.selectedProvider) {
+    this.modelRegistry.setProvider(provider);
+  }
+  
+  // 3. Set the specific model
+  this.modelRegistry.setChatModel(modelId);
+}
+```
+
+**Pattern**:
+- **UI**: Top-level dropdown driven by `unifiedChatModels`.
+- **Service**: `ModelRegistryService.getUnifiedChatModels()` aggregates models from all providers into grouped categories.
+- **State**: `selectedProvider` and `selectedChatModel` are synced. Switching key in dropdown triggers both updates.

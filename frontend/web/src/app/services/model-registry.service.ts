@@ -12,11 +12,14 @@ export interface ModelConfig {
   type: 'embedding' | 'chat';
   provider: ModelProvider;
   size?: string;
+  sizeBytes?: number;
   quantization?: string;
   isDefault?: boolean;
   details?: string; // Extra info like "GPU Optimized"
   cached?: boolean;
   isInstalled?: boolean; // For Ollama models
+  contextLength?: number | string;
+  outputTokens?: number | string;
 }
 
 @Injectable( {
@@ -28,38 +31,44 @@ export class ModelRegistryService {
   private readonly browserEmbeddingModels: ModelConfig[] = [
     {
       id: 'Xenova/all-MiniLM-L6-v2',
-      name: 'All MiniLM L6 v2 (Fastest)',
+      name: 'MiniLM-L6-v2',
       type: 'embedding',
       provider: 'browser',
-      size: '23MB',
+      size: '22MB',
+      details: '384 dims',
       isDefault: true
     },
     {
       id: 'Xenova/gte-small',
-      name: 'GTE Small (Better Quality)',
+      name: 'GTE Small',
       type: 'embedding',
       provider: 'browser',
-      size: '30MB'
+      size: '30MB',
+      details: 'Better Quality'
     }
   ];
 
   private readonly browserChatModels: ModelConfig[] = [
     {
       id: 'Phi-3-mini-4k-instruct-q4f16_1-MLC',
-      name: 'Phi-3 Mini (3.8B) - Browser',
+      name: 'Phi-3 Mini',
       type: 'chat',
       provider: 'browser',
       quantization: 'q4f16_1',
       size: '2.3GB',
+      contextLength: 4096,
+      details: '3.8B params',
       isDefault: true
     },
     {
       id: 'Llama-3-8B-Instruct-q4f32_1-MLC',
-      name: 'Llama 3 (8B) - Browser',
+      name: 'Llama 3',
       type: 'chat',
       provider: 'browser',
       quantization: 'q4f32_1',
-      size: '4.6GB'
+      size: '4.6GB',
+      contextLength: 8192,
+      details: '8B params'
     }
   ];
 
@@ -213,6 +222,67 @@ export class ModelRegistryService {
 
   setChatModel ( modelId: string ) {
     this.selectedChatModelSubject.next( modelId );
+  }
+
+  /**
+   * Add an OpenAI model to selection (for manual model entry)
+   */
+  addOpenAIModel ( modelId: string ) {
+    this.setChatModel( modelId );
+    console.log( `[ModelRegistry] Added OpenAI model: ${ modelId }` );
+  }
+
+  /**
+   * Get available models for a provider (for add model modal)
+   */
+  async getAvailableModels ( provider: 'ollama' | 'openai' | 'browser' ): Promise<ModelConfig[]> {
+    switch ( provider ) {
+      case 'browser':
+        return this.browserChatModels;
+      case 'ollama':
+        try {
+          const models = await this.ollamaService.getModels();
+          return models.map( m => ( {
+            id: m.name,
+            name: m.name.replace( ':latest', '' ),
+            type: 'chat' as const,
+            provider: 'ollama' as const,
+            size: m.size ? this.formatBytes( m.size ) : undefined,
+            isInstalled: true
+          } ) );
+        } catch ( e ) {
+          return [];
+        }
+      case 'openai':
+        const key = this.getOpenAIKey();
+        if ( key ) {
+          try {
+            const list = await this.openAIService.getModels( key );
+            return list.map( m => ( {
+              id: m.id,
+              name: m.id,
+              type: 'chat' as const,
+              provider: 'openai' as const
+            } ) );
+          } catch ( e ) {
+            return [];
+          }
+        }
+        return [];
+      default:
+        return [];
+    }
+  }
+
+  private formatBytes ( bytes: number ): string {
+    const units = [ 'B', 'KB', 'MB', 'GB', 'TB', 'PB' ];
+    let unitIndex = 0;
+    let size = bytes;
+    while ( size >= 1024 && unitIndex < units.length - 1 ) {
+      size /= 1024;
+      unitIndex++;
+    }
+    return `${ size.toFixed( 1 ) } ${ units[ unitIndex ] }`;
   }
 
   async refreshModels () {
@@ -444,6 +514,131 @@ export class ModelRegistryService {
 
     // UPDATE: I will just pass them through for now.
     this.embeddingModelsSubject.next( embeddingModels );
+  }
+
+  /**
+   * Returns chat models in a 3-level hierarchy for the dropdown:
+   * Category (Offline/Online) -> Provider (Ollama/Browser/OpenAI) -> Models
+   */
+  async getUnifiedChatModels (): Promise<{ label: string; subgroups: { label: string; options: ModelConfig[]; noKeyConfigured?: boolean; message?: string }[] }[]> {
+    const currentModels = this.chatModelsSubject.value;
+    const provider = this.selectedProviderSubject.value;
+
+    // Fetch models for all providers
+    let ollamaModels: ModelConfig[] = [];
+    let browserModels: ModelConfig[] = [];
+    let openaiModels: ModelConfig[] = [];
+
+    // Get Ollama models (installed only)
+    try {
+      const ollamaList = await this.ollamaService.getModels();
+      ollamaModels = ollamaList.map( m => ( {
+        id: m.name,
+        name: m.name.replace( ':latest', '' ),
+        type: 'chat' as const,
+        provider: 'ollama' as const,
+        size: m.size ? this.formatBytes( m.size ) : undefined,
+        sizeBytes: m.size,
+        isInstalled: true
+      } ) );
+    } catch ( e ) {
+      console.warn( 'Could not fetch Ollama models for unified list' );
+    }
+
+    // Get Browser models with cache status
+    browserModels = await Promise.all(
+      this.browserChatModels.map( async m => ( {
+        ...m,
+        cached: await hasModelInCache( m.id )
+      } ) )
+    );
+
+    // Get OpenAI models from current registry (uses cached metadata)
+    const key = this.getOpenAIKey();
+
+    // Static metadata for common OpenAI models
+    const staticMetadata: Record<string, { contextLength: string; outputTokens: string; details: string }> = {
+      'gpt-4o': { contextLength: '128k', outputTokens: '16k', details: 'High Intelligence' },
+      'gpt-4o-mini': { contextLength: '128k', outputTokens: '16k', details: 'Fast & Smart' },
+      'gpt-4-turbo': { contextLength: '128k', outputTokens: '4k', details: 'High Intelligence' },
+      'gpt-4': { contextLength: '8k', outputTokens: '8k', details: 'High Intelligence' },
+      'gpt-3.5-turbo': { contextLength: '16k', outputTokens: '4k', details: 'Fast & Cost-effective' },
+      'o1': { contextLength: '200k', outputTokens: '100k', details: 'Reasoning Model' },
+      'o1-mini': { contextLength: '128k', outputTokens: '65k', details: 'Fast Reasoning' }
+    };
+
+    // Helper to get metadata (cached or static fallback)
+    const getMetadataFor = ( modelId: string ) => {
+      // Try cached metadata first
+      if ( this.cachedOpenAIMetadata?.models?.[ modelId ] ) {
+        return this.cachedOpenAIMetadata.models[ modelId ];
+      }
+      // Try fuzzy match on cached
+      if ( this.cachedOpenAIMetadata?.models ) {
+        for ( const [ k, value ] of Object.entries( this.cachedOpenAIMetadata.models ) ) {
+          if ( modelId.includes( k ) || k.includes( modelId ) ) {
+            return value as any;
+          }
+        }
+      }
+      // Static fallback
+      for ( const [ k, value ] of Object.entries( staticMetadata ) ) {
+        if ( modelId.includes( k ) || k.includes( modelId ) ) {
+          return value;
+        }
+      }
+      return { contextLength: 'Unknown', outputTokens: 'Unknown', details: 'Cloud API' };
+    };
+
+    if ( key ) {
+      try {
+        // Ensure metadata is fetched before using it
+        if ( !this.cachedOpenAIMetadata ) {
+          await this.fetchOpenAIMetadata();
+        }
+
+        const openAIList = await this.openAIService.getModels( key );
+
+        openaiModels = openAIList.map( m => {
+          const meta = getMetadataFor( m.id );
+          return {
+            id: m.id,
+            name: m.id,
+            type: 'chat' as const,
+            provider: 'openai' as const,
+            contextLength: meta.contextLength,
+            outputTokens: meta.outputTokens,
+            details: meta.details || 'Cloud API'
+          };
+        } );
+      } catch ( e ) {
+        console.warn( 'Could not fetch OpenAI models for unified list:', e );
+      }
+    }
+
+    // Build 3-level hierarchy with metadata
+    const hasOpenAIKey = !!key;
+
+    return [
+      {
+        label: 'Offline',
+        subgroups: [
+          { label: 'Ollama', options: ollamaModels },
+          { label: 'Browser Based', options: browserModels }
+        ]
+      },
+      {
+        label: 'Online',
+        subgroups: [
+          {
+            label: 'OpenAI',
+            options: openaiModels,
+            noKeyConfigured: !hasOpenAIKey,
+            message: !hasOpenAIKey ? 'No OpenAI API key configured.' : undefined
+          }
+        ]
+      }
+    ];
   }
 
   private async checkEmbeddingCache ( modelId: string ): Promise<boolean> {

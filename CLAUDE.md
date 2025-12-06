@@ -59,21 +59,6 @@ async getEmbedding(text: string): Promise<number[]> {
   // Browser fallback
   if (!this.pipe) await this.initModel(modelId);
   const output = await this.pipe(text, { pooling: 'mean', normalize: true });
-  return Array.from(output.data);
-}
-```
-
-**Key Points**:
-- Check `ModelRegistryService.selectedProvider$` to determine active provider
-- Use switch/case or if/else for provider-specific logic
-- Always handle all three providers (Browser/Ollama/OpenAI)
-- Provide meaningful error messages for provider-specific failures
-
-### Ollama Integration
-
-**Progress Bars**: Implement multi-layer tracking using `digest` field
-```typescript
-const digestProgress = new Map<string, number>();
 
 for await (const _ of ollamaService.pullModel(modelId, 
   (completed, total, digest, status) => {
@@ -223,4 +208,38 @@ await storageService.importDocuments(documentsArray);
 - **Job Matching**: Compare CVs against job descriptions
 - **Export Formats**: PDF, DOCX export of candidate summaries
 - **Advanced Filters**: Experience years, skills, location
-- **Real-time Collaboration**: Share parsed CVs with team
+### 13. Unified Model Selection Architecture
+
+**Problem**: Users found it confusing to switch tabs to select models.
+
+**Solution**: A single "Smart Dropdown" at the top level (`ModelConfigComponent`) that controls the provider and specific model.
+
+**Key Logic**: `AppComponent.onChatModelChange` finds the model in the unified list, determines the provider, switches the provider if necessary, and sets the model.
+
+**Implementation Logic** (`AppComponent.onChatModelChange`):
+```typescript
+onChatModelChange(modelId: string) {
+  // 1. Find the provider associated with this model ID from the unified list
+  let provider: ModelProvider | undefined;
+  for (const group of this.unifiedChatModels) {
+    const model = group.options.find(m => m.id === modelId);
+    if (model) {
+      provider = model.provider;
+      break;
+    }
+  }
+
+  // 2. Switch provider context if it changed
+  if (provider && provider !== this.selectedProvider) {
+    this.modelRegistry.setProvider(provider);
+  }
+  
+  // 3. Set the specific model
+  this.modelRegistry.setChatModel(modelId);
+}
+```
+
+**Pattern**:
+- **UI**: Top-level dropdown driven by `unifiedChatModels`.
+- **Service**: `ModelRegistryService.getUnifiedChatModels()` aggregates models from all providers into grouped categories.
+- **State**: `selectedProvider` and `selectedChatModel` are synced. Switching key in dropdown triggers both updates.

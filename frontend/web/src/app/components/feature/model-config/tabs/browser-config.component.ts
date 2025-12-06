@@ -1,12 +1,12 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ModelConfig } from '../../../../services/model-registry.service';
-import { ModelSelectComponent } from '../../../ui/model-select/model-select.component';
+import { SmartDropdownComponent } from '../../../ui/smart-dropdown/smart-dropdown.component';
 
 @Component( {
     selector: 'app-browser-config',
     standalone: true,
-    imports: [ CommonModule, ModelSelectComponent ],
+    imports: [ CommonModule, SmartDropdownComponent ],
     templateUrl: './browser-config.component.html'
 } )
 export class BrowserConfigComponent {

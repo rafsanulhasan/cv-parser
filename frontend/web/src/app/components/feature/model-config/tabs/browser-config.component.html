@@ -5,11 +5,7 @@
         (~2-4GB).
     </div>
 
-    <app-model-select label="Embedding Model" [models]="embeddingModels" [selectedModelId]="selectedEmbeddingModelId"
+    <app-smart-dropdown label="Embedding Model" [models]="embeddingModels" [selectedModelId]="selectedEmbeddingModelId"
         (modelChange)="embeddingModelChange.emit($event)">
-    </app-model-select>
-
-    <app-model-select label="Chat Model" [models]="chatModels" [selectedModelId]="selectedChatModelId"
-        (modelChange)="chatModelChange.emit($event)">
-    </app-model-select>
+    </app-smart-dropdown>
 </div>

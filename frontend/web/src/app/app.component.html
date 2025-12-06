@@ -7,13 +7,19 @@
 
     <!-- Model Configuration -->
     <app-model-config [selectedProvider]="selectedProvider" [showSettings]="showSettings"
-        (toggleSettings)="toggleSettings()" (providerChange)="onProviderChange($event)">
+        [chatModels]="unifiedChatModels" [selectedChatModelId]="selectedChatModel"
+        [showDownload]="isSelectedChatModelOllama" [showDelete]="isSelectedChatModelOllama"
+        [isInstalled]="isChatModelInstalled"
+        [isPulling]="embeddingPullProgress.status !== '' && embeddingPullProgress.status !== 'success'"
+        [deleteConfirming]="confirmingEmbeddingDelete" (toggleSettings)="toggleSettings()"
+        (providerChange)="onProviderChange($event)" (chatModelChange)="onChatModelChange($event)"
+        (openAddModel)="openAddModelModal()" (downloadModel)="onDownloadModel({ id: selectedChatModel, type: 'chat' })"
+        (deleteModel)="onDeleteModel({ id: selectedChatModel, type: 'chat' })" (cancelPull)="onCancelPull()">
 
         <!-- Browser Config -->
         <app-browser-config *ngIf="selectedProvider === 'browser'" [chatModels]="chatModels"
             [embeddingModels]="embeddingModels" [selectedChatModelId]="selectedChatModel"
-            [selectedEmbeddingModelId]="selectedEmbeddingModel" (chatModelChange)="onChatModelChange($event)"
-            (embeddingModelChange)="onEmbeddingModelChange($event)">
+            [selectedEmbeddingModelId]="selectedEmbeddingModel" (embeddingModelChange)="onEmbeddingModelChange($event)">
         </app-browser-config>
 
         <!-- Ollama Config -->
@@ -22,10 +28,9 @@
             [selectedEmbeddingModelId]="selectedEmbeddingModel" [ollamaApiUrl]="ollamaApiUrl"
             [isPulling]="embeddingPullProgress.status !== '' && embeddingPullProgress.status !== 'success'"
             [pullProgress]="embeddingPullProgress.percent > 0 ? embeddingPullProgress : null"
-            [deleteConfirming]="confirmingEmbeddingDelete" (chatModelChange)="onChatModelChange($event)"
-            (embeddingModelChange)="onEmbeddingModelChange($event)" (apiUrlChange)="onOllamaApiUrlChange($event)"
-            (downloadModel)="onDownloadModel($event)" (deleteModel)="onDeleteModel($event)"
-            (cancelPull)="onCancelPull()">
+            [deleteConfirming]="confirmingEmbeddingDelete" (embeddingModelChange)="onEmbeddingModelChange($event)"
+            (apiUrlChange)="onOllamaApiUrlChange($event)" (downloadModel)="onDownloadModel($event)"
+            (deleteModel)="onDeleteModel($event)" (cancelPull)="onCancelPull()">
         </app-ollama-config>
 
         <!-- OpenAI Config -->
@@ -34,11 +39,15 @@
             [selectedEmbeddingModelId]="selectedEmbeddingModel" [apiKey]="openaiApiKey"
             [isRefreshing]="isRefreshingOpenAIMetadata"
             [metadataLastUpdated]="modelRegistry.cachedOpenAIMetadata?.lastUpdated"
-            (chatModelChange)="onChatModelChange($event)" (embeddingModelChange)="onEmbeddingModelChange($event)"
-            (apiKeyChange)="onOpenAiApiKeyChange($event)" (saveKey)="saveOpenAIKey()" (removeKey)="removeOpenAIKey()"
-            (refreshMetadata)="refreshOpenAIMetadata()" (viewMetadata)="viewOpenAIMetadata($event)">
+            (embeddingChange)="onEmbeddingModelChange($event)" (apiKeyChange)="onOpenAiApiKeyChange($event)"
+            (saveKey)="saveOpenAIKey()" (removeKey)="removeOpenAIKey()" (refreshMetadata)="refreshOpenAIMetadata()"
+            (viewMetadata)="viewOpenAIMetadata($event)">
         </app-openai-config>
     </app-model-config>
+
+    <app-add-model-modal *ngIf="isAddModelModalOpen" [provider]="selectedProvider" (close)="closeAddModelModal()"
+        (modelAdded)="onModelAddedFromModal($event)">
+    </app-add-model-modal>
 
     <!-- Processing Status -->
     <div *ngIf="statusMessages.length > 0"
@@ -50,10 +59,31 @@
     <app-file-uploader [disabled]="isProcessing" [selectedFileType]="selectedFileType" [isProcessing]="isProcessing"
         [progressPercent]="progressPercent" [modelLoadingProgress]="modelLoadingProgress" [steps]="steps"
         (fileSelected)="onFileSelected($event)" (resetProgress)="resetProgress()">
+
+        <!-- Injected Chat Model Selector -->
+        <div slot="chat-model" style="display: flex; gap: 10px; align-items: flex-end; margin-bottom: 10px;">
+            <app-smart-dropdown style="flex: 1;" label="Chat Model" [groups]="unifiedChatModels"
+                [selectedModelId]="selectedChatModel" [showDownload]="isSelectedChatModelOllama"
+                [showDelete]="isSelectedChatModelOllama" [isInstalled]="isChatModelInstalled"
+                [isPulling]="embeddingPullProgress.status !== '' && embeddingPullProgress.status !== 'success'"
+                [deleteConfirming]="confirmingEmbeddingDelete" (modelChange)="onChatModelChange($event)"
+                (download)="onDownloadModel({ id: selectedChatModel, type: 'chat' })"
+                (delete)="onDeleteModel({ id: selectedChatModel, type: 'chat' })" (cancelPull)="onCancelPull()"
+                (openBYOM)="isOpenAIKeyModalOpen = true">
+            </app-smart-dropdown>
+            <button (click)="openAddModelModal()" title="Add new model"
+                style="height: 38px; padding: 0 15px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2px;">
+                <span style="font-size: 1.2em; line-height: 1;">+</span> Add Model
+            </button>
+        </div>
     </app-file-uploader>
 
     <!-- Documents List -->
     <app-document-list [documents]="documents" (delete)="deleteDocument($event)" (importData)="importData($event)"
         (exportData)="exportData()">
     </app-document-list>
+
+    <!-- OpenAI API Key Modal -->
+    <app-openai-key-modal *ngIf="isOpenAIKeyModalOpen" (close)="isOpenAIKeyModalOpen = false" (saved)="refreshModels()">
+    </app-openai-key-modal>
 </div>

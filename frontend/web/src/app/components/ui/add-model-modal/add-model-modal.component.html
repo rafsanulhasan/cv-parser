@@ -1,0 +1,95 @@
+<div
+    style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000; display: flex; justify-content: center; align-items: center; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); animation: fadeIn 0.2s ease-out;">
+
+    <div
+        style="background: white; width: 500px; max-width: 90%; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); overflow: hidden; display: flex; flex-direction: column; max-height: 80vh; animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);">
+
+        <!-- Header -->
+        <div
+            style="padding: 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; background: #f8f9fa;">
+            <h2 style="margin: 0; font-size: 1.25rem; color: #333;">Add {{ provider | titlecase }} Model</h2>
+            <button (click)="onClose()"
+                style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #666; line-height: 1;">&times;</button>
+        </div>
+
+        <!-- Body -->
+        <div style="padding: 20px; overflow-y: auto;">
+
+            <!-- OpenAI Manual Input -->
+            <div *ngIf="provider === 'openai'"
+                style="margin-bottom: 20px; background: #f0f4ff; padding: 15px; border-radius: 8px; border: 1px solid #cce5ff;">
+                <label style="display: block; font-weight: 600; margin-bottom: 8px; color: #0056b3;">Add Custom Model
+                    ID</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" [(ngModel)]="manualModelId" placeholder="e.g. gpt-4-turbo"
+                        (keyup.enter)="addManualOpenAIModel()"
+                        style="flex: 1; padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; outline: none;">
+                    <button (click)="addManualOpenAIModel()" [disabled]="!manualModelId.trim()"
+                        style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">
+                        Add
+                    </button>
+                </div>
+            </div>
+
+            <!-- Search -->
+            <div style="margin-bottom: 15px;">
+                <input type="text" [(ngModel)]="searchQuery" placeholder="Search available models..."
+                    style="width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; outline: none; transition: border-color 0.2s;">
+            </div>
+
+            <!-- List -->
+            <div *ngIf="loading" style="text-align: center; padding: 20px; color: #666;">
+                ⏳ Loading available models...
+            </div>
+
+            <div *ngIf="!loading">
+                <div *ngIf="filteredModels.length === 0" style="text-align: center; padding: 20px; color: #999;">
+                    No models found.
+                </div>
+
+                <ul style="list-style: none; padding: 0; margin: 0;">
+                    <li *ngFor="let model of filteredModels"
+                        style="padding: 12px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s;">
+                        <div>
+                            <div style="font-weight: 600; color: #333;">{{ model.name }}</div>
+                            <div style="font-size: 0.85rem; color: #666;">{{ model.id }}</div>
+                            <div *ngIf="model.details" style="font-size: 0.8rem; color: #888; margin-top: 2px;">{{
+                                model.details }}</div>
+                        </div>
+
+                        <button (click)="addModel(model)" [disabled]="actionStatus[model.id]"
+                            style="padding: 6px 14px; border-radius: 6px; border: none; cursor: pointer; font-size: 0.9rem; font-weight: 500; transition: transform 0.1s;"
+                            [style.background]="actionStatus[model.id] ? '#28a745' : '#007bff'" [style.color]="'white'">
+                            {{ actionStatus[model.id] || (provider === 'ollama' ? 'Download' : 'Add') }}
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<style>
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+
+    @keyframes slideUp {
+        from {
+            transform: translateY(20px);
+            opacity: 0;
+        }
+
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+</style>

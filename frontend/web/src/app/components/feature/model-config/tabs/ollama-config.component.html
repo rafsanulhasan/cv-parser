@@ -10,20 +10,12 @@
     </div>
 
     <!-- Embedding Model -->
-    <app-model-select label="Embedding Model" [models]="embeddingModels" [selectedModelId]="selectedEmbeddingModelId"
+    <app-smart-dropdown label="Embedding Model" [models]="embeddingModels" [selectedModelId]="selectedEmbeddingModelId"
         (modelChange)="embeddingModelChange.emit($event)" [showDownload]="true" [showDelete]="true"
         [isInstalled]="selectedEmbeddingModel?.isInstalled ?? false" [isPulling]="isPulling"
         [deleteConfirming]="deleteConfirming" (download)="onEmbeddingModelDownload()"
         (delete)="onEmbeddingModelDelete()" (cancelPull)="cancelPull.emit()">
-    </app-model-select>
-
-    <!-- Chat Model -->
-    <app-model-select label="Chat Model" [models]="chatModels" [selectedModelId]="selectedChatModelId"
-        (modelChange)="chatModelChange.emit($event)" [showDownload]="true" [showDelete]="true"
-        [isInstalled]="selectedChatModel?.isInstalled ?? false" [isPulling]="isPulling"
-        [deleteConfirming]="deleteConfirming" (download)="onChatModelDownload()" (delete)="onChatModelDelete()"
-        (cancelPull)="cancelPull.emit()">
-    </app-model-select>
+    </app-smart-dropdown>
 
     <!-- Pull Progress -->
     <div *ngIf="isPulling"

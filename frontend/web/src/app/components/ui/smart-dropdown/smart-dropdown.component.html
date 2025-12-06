@@ -1,70 +1,136 @@
-<div style="margin-bottom: 15px;">
-  <label style="display: block; font-weight: bold; margin-bottom: 5px;">{{ label }}</label>
+<div class="smart-dropdown-container">
+  <label *ngIf="label" class="dropdown-label">{{ label }}</label>
+
   <div style="display: flex; gap: 10px;">
-    <!-- Dropdown Container -->
-    <div style="flex: 1; display: flex; align-items: center; border: 1px solid #ccc; border-radius: 4px; background: white;">
-      <select 
-        [ngModel]="selectedModelId" 
-        (ngModelChange)="onModelChange($event)" 
-        [disabled]="isDisabled" 
-        style="flex: 1; padding: 8px; border: none; background: transparent; outline: none;">
-        
-        <!-- Grouped (Ollama) -->
-        <ng-container *ngIf="isOllamaGrouped; else simpleList">
-          <optgroup label="Installed Models (Ready)">
-            <option *ngFor="let model of installedModels" [value]="model.id">
-              {{ model.name }} <span *ngIf="model.size">({{ model.size }})</span>
-            </option>
-          </optgroup>
-          <optgroup label="Available to Download">
-            <option *ngFor="let model of availableToDownloadModels" [value]="model.id">
-              {{ model.name }}
-            </option>
-          </optgroup>
+    <!-- Custom Dropdown Trigger -->
+    <div style="flex: 1; position: relative;">
+      <div class="dropdown-trigger" [class.disabled]="isDisabled" (click)="toggleDropdown()">
+        <div class="trigger-content">
+          <span class="selected-text">{{ selectedModelName }}</span>
+          <div *ngIf="getSelectedModel() as model" class="selected-metadata">
+            <span *ngIf="model.sizeBytes" class="meta-badge">{{ formatSize(model.sizeBytes) }}</span>
+            <span *ngIf="model.size && !model.sizeBytes" class="meta-badge">{{ model.size }}</span>
+            <span *ngIf="model.contextLength" class="meta-badge" title="Context Size">{{
+              formatNumber(model.contextLength) }} ctx</span>
+            <span *ngIf="model.outputTokens" class="meta-badge" title="Max Output">{{ formatNumber(model.outputTokens)
+              }} out</span>
+          </div>
+        </div>
+        <span class="arrow-icon">{{ isOpen ? '▲' : '▼' }}</span>
+      </div>
+
+      <!-- Dropdown Menu -->
+      <div *ngIf="isOpen" class="dropdown-menu">
+
+        <!-- Case 1: Complex Hierarchy (Subgroups) -->
+        <ng-container *ngIf="groups.length > 0; else flatList">
+          <ng-container *ngFor="let group of groups">
+
+            <!-- Level 1 Header -->
+            <div class="group-header">{{ group.label }}</div>
+
+            <!-- Subgroups (Level 2) -->
+            <ng-container *ngIf="group.subgroups">
+              <ng-container *ngFor="let subgroup of group.subgroups">
+                <div class="subgroup-header">{{ subgroup.label }}</div>
+
+                <!-- Show message and BYOM button if no API key configured -->
+                <div *ngIf="subgroup.noKeyConfigured" class="no-key-message">
+                  <span class="message-text">{{ subgroup.message }}</span>
+                  <button class="byom-button" (click)="openBYOM.emit(); $event.stopPropagation()">
+                    Bring Your Own Model (BYOM)
+                  </button>
+                </div>
+
+                <!-- Items (Level 3) - only show if key is configured or there are models -->
+                <ng-container *ngIf="!subgroup.noKeyConfigured">
+                  <div *ngFor="let model of subgroup.options" class="dropdown-item"
+                    [class.selected]="model.id === selectedModelId" (click)="selectModel(model.id)">
+                    <span>{{ model.name }}</span>
+                    <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                      <span *ngIf="model.sizeBytes" class="item-badge">{{ formatSize(model.sizeBytes) }}</span>
+                      <span *ngIf="model.size && !model.sizeBytes" class="item-badge">{{ model.size }}</span>
+                      <span
+                        *ngIf="model.contextLength && model.contextLength !== 'Unknown' && model.contextLength !== 'N/A'"
+                        class="item-badge">{{
+                        formatNumber(model.contextLength) }}
+                        ctx</span>
+                      <span
+                        *ngIf="model.outputTokens && model.outputTokens !== 'Unknown' && model.outputTokens !== 'N/A'"
+                        class="item-badge">{{
+                        formatNumber(model.outputTokens) }}
+                        out</span>
+                      <span *ngIf="model.quantization" class="item-badge">{{ model.quantization }}</span>
+                      <span *ngIf="model.details && model.details !== 'Unknown' && model.details !== 'N/A'"
+                        class="item-badge details">{{
+                        model.details }}</span>
+                    </div>
+                  </div>
+                </ng-container>
+              </ng-container>
+            </ng-container>
+
+            <!-- Direct Options (Fallback or mixed) -->
+            <ng-container *ngIf="group.options">
+              <div *ngFor="let model of group.options" class="dropdown-item"
+                [class.selected]="model.id === selectedModelId" (click)="selectModel(model.id)">
+                <span>{{ model.name }}</span>
+                <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                  <span *ngIf="model.sizeBytes" class="item-badge">{{ formatSize(model.sizeBytes) }}</span>
+                  <span *ngIf="model.size && !model.sizeBytes" class="item-badge">{{ model.size }}</span>
+                  <span *ngIf="model.contextLength" class="item-badge">{{ formatNumber(model.contextLength) }}
+                    ctx</span>
+                  <span *ngIf="model.outputTokens" class="item-badge">{{ formatNumber(model.outputTokens) }} out</span>
+                  <span *ngIf="model.quantization" class="item-badge">{{ model.quantization }}</span>
+                  <span *ngIf="model.details" class="item-badge details">{{ model.details }}</span>
+                </div>
+              </div>
+            </ng-container>
+
+          </ng-container>
         </ng-container>
 
-        <!-- Simple List (Browser/OpenAI) -->
-        <ng-template #simpleList>
-          <option *ngFor="let model of models" [value]="model.id">
-            {{ model.name }} 
-            <span *ngIf="model.size">({{ model.size }})</span> 
-            <span *ngIf="model.cached">✅ Cached</span>
-          </option>
+        <!-- Case 2: Flat List or Simple Groups (Fallback) -->
+        <ng-template #flatList>
+          <!-- If models input is used directly -->
+          <div *ngFor="let model of models" class="dropdown-item flat-item"
+            [class.selected]="model.id === selectedModelId" (click)="selectModel(model.id)">
+            <span>{{ model.name }}</span>
+            <div style="display: flex; gap: 4px;">
+              <span *ngIf="model.size" class="item-badge">{{ model.size }}</span>
+              <span *ngIf="model.quantization" class="item-badge">{{ model.quantization }}</span>
+              <span *ngIf="model.details" class="item-badge details">{{ model.details }}</span>
+            </div>
+          </div>
         </ng-template>
 
-      </select>
-      
-      <!-- Info Button -->
-      <button *ngIf="showInfoButton" 
-              (click)="infoClick.emit()" 
-              style="padding: 0 8px; background: transparent; border: none; cursor: pointer; font-size: 1.1em; border-left: 1px solid #eee;" 
-              title="Model Info">
-        ℹ️
-      </button>
+      </div>
     </div>
+
+    <!-- Info Button -->
+    <button *ngIf="showInfoButton" (click)="infoClick.emit(selectedModelId)"
+      style="padding: 0 10px; background: white; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; font-size: 1.1em;"
+      title="Model Info">
+      ℹ️
+    </button>
 
     <!-- Actions (Ollama) -->
     <ng-container *ngIf="showDownload">
-      <button *ngIf="!isInstalled && !isPulling" 
-              (click)="download.emit()" 
-              [disabled]="!selectedModelId"
-              [style.opacity]="(!selectedModelId) ? 0.5 : 1"
-              style="width: 100px; padding: 8px 0; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap; text-align: center; display: flex; justify-content: center; align-items: center;">
-          Download
+      <button *ngIf="!isInstalled && !isPulling" (click)="download.emit()" [disabled]="!selectedModelId"
+        [style.opacity]="(!selectedModelId) ? 0.5 : 1"
+        style="min-width: 100px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+        Download
       </button>
 
-      <button *ngIf="isPulling" 
-              (click)="cancelPull.emit()" 
-              style="width: 100px; padding: 8px 0; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap; text-align: center; display: flex; justify-content: center; align-items: center;">
-          Cancel
+      <button *ngIf="isPulling" (click)="cancelPull.emit()"
+        style="min-width: 100px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">
+        Cancel
       </button>
 
-      <button *ngIf="showDelete && !isPulling && isInstalled" 
-              (click)="delete.emit()" 
-              [disabled]="!selectedModelId"
-              [style.opacity]="(!selectedModelId) ? 0.5 : 1"
-              style="width: 100px; padding: 8px 0; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap; text-align: center; display: flex; justify-content: center; align-items: center;">
-          {{ deleteConfirming ? 'Confirm?' : 'Delete' }}
+      <button *ngIf="showDelete && !isPulling && isInstalled" (click)="delete.emit()" [disabled]="!selectedModelId"
+        [style.opacity]="(!selectedModelId) ? 0.5 : 1"
+        style="min-width: 100px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">
+        {{ deleteConfirming ? 'Confirm?' : 'Delete' }}
       </button>
     </ng-container>
   </div>

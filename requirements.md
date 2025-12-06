@@ -981,3 +981,62 @@ upgrade(db, oldVersion, newVersion, transaction) {
 - [x] Refactor `AppComponent` to orchestrate child components.
 - [x] Fix build issues related to `sharp`/`onnxruntime-node`.
 - [x] Verify application references and functionality.
+
+### 5.10 Model Catalog Management
+
+#### Use Case 10.1: Quick Chat Model Selection
+
+**User Story 10.1.1: Unified Chat Model Dropdown**:
+
+- **As** a general user
+- **I want** to see a list of chat models just above the upload button containing all the models that are ready to use
+- **So that** I can easily select the desired chat model for the current task
+
+**Acceptance Criteria**:
+
+- The dropdown is positioned immediately above the File Upload area.
+- The dropdown is large enough to be clearly visible and has rounded corners.
+- It displays a **categorized list** of "ready" models:
+    - **Offline**
+        - **Ollama**: Lists installed models (e.g., Llama 3, Mistral)
+        - **Browser-based**: Lists supported browser models (e.g., Phi-3 Mini, Llama 3)
+    - **Online**
+        - **OpenAI**: Lists specific models added by the user to their catalog (e.g., GPT-4o)
+- Selecting a model updates the active chat model for processing.
+
+**Tasks**:
+
+- [x] Create Unified Dropdown using `SmartDropdownComponent` in `ModelConfigComponent`.
+- [x] Implement `ModelRegistryService.getUnifiedChatModels()` to aggregate and categorize models.
+- [x] Verify selection updates the processing pipeline.
+
+#### Use Case 10.2: Add Model to Catalog
+
+**User Story 10.2.1: Add Chat Model Modal**:
+
+- **As** a user
+- **I want** to be able to add specific models into my Model catalog
+- **So that** I can reuse them later (and keep the main list clean)
+
+**Acceptance Criteria**:
+
+- **Add Button**: An icon button `(+)` is located to the right of the Chat Model Selection dropdown.
+- **Modal UI**:
+    - Title: "Add chat model"
+    - **Provider Dropdown**: Smart multi-select dropdown to filter by provider (Ollama, Browser, OpenAI).
+    - **Model Dropdown**: Smart multi-select dropdown showing models *available to add* (filtered by selected provider).
+        - **Ollama**: Shows library models *not* yet installed.
+        - **Browser**: Shows supported models *not* yet cached/added.
+        - **OpenAI**: Shows full API model list *not* yet in user's catalog.
+- **Add Action**: Clicking "Add Model(s)" functionality:
+    - **Ollama**: Triggers `pullModel` (downloads model image).
+    - **Browser**: Triggers model download/caching (.onnx).
+    - **OpenAI**: Adds model ID to the persistent "My Models" catalog.
+- **Feedback**: Shows progress bars for downloads. Closes modal and shows notification on success.
+
+**Tasks**:
+
+- [x] Create `AddModelModalComponent`.
+- [x] Implement `ModelRegistryService.getAvailableModels(provider)` logic (or similar).
+- [x] Implement Add logic for each provider type.
+- [x] Implement local storage persistence for "User Added" OpenAI models (via `ModelRegistryService`).
