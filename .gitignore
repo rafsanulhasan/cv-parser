@@ -1,6 +1,7 @@
 # Backend
 backend/uploads
 backend/node_modules
+backend/models-metadata.json
 
 # Frontend
 frontend/web/.angular/cache/
