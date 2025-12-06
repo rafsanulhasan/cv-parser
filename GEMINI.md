@@ -514,3 +514,41 @@ See "Common Error Messages" and "Recent Fixes" sections for validation checkpoin
 - **Memory Usage**: Large models (4GB+) may cause issues on low-memory devices
 - **Browser Compatibility**: WebGPU required for browser mode (Chrome/Edge 113+ only)
 - **Data Migration**: Schema upgrades currently drop all data (temporary limitation)
+
+### 12. Angular Build with Backend Dependencies (sharp, onnxruntime-node)
+
+**Problem**: Libraries like `@xenova/transformers` and `@mlc-ai/web-llm` often have optional dependencies on Node.js-only packages (`sharp`, `onnxruntime-node`). Angular's webpack-based build tries to bundle these, causing resolution errors or massive bundle sizes.
+
+**Solution**: Explicitly mock these modules in `tsconfig.json` and exclude them in `package.json`.
+
+**1. Mock File (`src/app/mocks/sharp.mock.ts`):**
+```typescript
+export default {};
+```
+
+**2. `tsconfig.json` Path Mappings:**
+```json
+"paths": {
+  "sharp": ["src/app/mocks/sharp.mock.ts"],
+  "fs": ["src/app/mocks/sharp.mock.ts"],
+  "path": ["src/app/mocks/sharp.mock.ts"],
+  "os": ["src/app/mocks/sharp.mock.ts"],
+  "onnxruntime-node": ["src/app/mocks/sharp.mock.ts"]
+}
+```
+
+**3. `package.json` Browser Field:**
+```json
+"browser": {
+  "sharp": false,
+  "fs": false,
+  "path": false,
+  "os": false
+}
+```
+
+**4. Build Budget (`angular.json`):**
+Increase `maximumError` budget (e.g., to 10MB) to accommodate large ML libraries if necessary.
+
+**5. Manual cleanup:**
+If specific node modules persist in causing errors, you may need to manually delete them from `node_modules` (e.g., `rm -rf node_modules/sharp`) if the tokenizer or other tools don't respect the excludes.

@@ -1,0 +1,15 @@
+<div style="background: white; padding: 15px; border-radius: 4px; border: 1px solid #ccc;">
+    <div
+        style="margin-bottom: 10px; padding: 10px; background: #e3f2fd; color: #0c5460; border-radius: 4px; font-size: 0.9em;">
+        <strong>Note:</strong> Browser models run entirely on your device. First run requires downloading model weights
+        (~2-4GB).
+    </div>
+
+    <app-model-select label="Embedding Model" [models]="embeddingModels" [selectedModelId]="selectedEmbeddingModelId"
+        (modelChange)="embeddingModelChange.emit($event)">
+    </app-model-select>
+
+    <app-model-select label="Chat Model" [models]="chatModels" [selectedModelId]="selectedChatModelId"
+        (modelChange)="chatModelChange.emit($event)">
+    </app-model-select>
+</div>

@@ -1,0 +1,35 @@
+<div style="background: white; padding: 15px; border-radius: 4px; border: 1px solid #ccc;">
+    <div style="margin-bottom: 20px;">
+        <label style="display: block; font-weight: bold; margin-bottom: 5px;">OpenAI API Key</label>
+        <div style="display: flex; gap: 10px;">
+            <input type="password" [ngModel]="apiKey" (ngModelChange)="apiKeyChange.emit($event)" placeholder="sk-..."
+                style="flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+            <button (click)="saveKey.emit()"
+                style="padding: 8px 15px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">Save</button>
+            <button (click)="removeKey.emit()"
+                style="padding: 8px 15px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">Forget</button>
+        </div>
+    </div>
+
+    <app-model-select label="Embedding Model" [models]="embeddingModels" [selectedModelId]="selectedEmbeddingModelId"
+        (modelChange)="embeddingModelChange.emit($event)" [showInfoButton]="true"
+        (infoClick)="viewMetadata.emit(selectedEmbeddingModelId)">
+    </app-model-select>
+
+    <app-model-select label="Chat Model" [models]="chatModels" [selectedModelId]="selectedChatModelId"
+        (modelChange)="chatModelChange.emit($event)" [showInfoButton]="true"
+        (infoClick)="viewMetadata.emit(selectedChatModelId)">
+    </app-model-select>
+
+    <div
+        style="margin-top: 15px; padding-top: 10px; border-top: 1px dashed #ccc; display: flex; justify-content: space-between; align-items: center;">
+        <small style="color: #666;">
+            Metadata: {{ metadataLastUpdated ? (metadataLastUpdated | date:'medium') : 'Never' }}
+        </small>
+        <button (click)="refreshMetadata.emit()" [disabled]="isRefreshing"
+            style="padding: 4px 8px; font-size: 0.8em; background: #f8f9fa; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+            <span *ngIf="isRefreshing" style="animation: spin 1s linear infinite;">⏳</span>
+            {{ isRefreshing ? 'Refreshing...' : '🔄 Refresh Metadata' }}
+        </button>
+    </div>
+</div>

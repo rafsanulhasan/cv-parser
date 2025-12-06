@@ -1,0 +1,62 @@
+<div style="margin-bottom: 20px; padding: 20px; border: 1px solid #ddd; border-radius: 8px; background: #f5f5f5;">
+    <h3>Upload & Process Document</h3>
+    <div style="display: flex; align-items: center;">
+        <input type="file" (change)="fileSelected.emit($event)" accept=".txt,.md,.json,.pdf,.docx,.doc"
+            [disabled]="disabled">
+
+        <!-- Upload Widget Icon -->
+        <svg *ngIf="selectedFileType" width="32" height="32" viewBox="0 0 32 32" fill="none"
+            xmlns="http://www.w3.org/2000/svg" [title]="selectedFileType" style="margin-left: 5px;">
+            <path d="M6 4C6 2.89543 6.89543 2 8 2H20L26 8V28C26 29.1046 25.1046 30 24 30H8C6.89543 30 6 29.1046 6 28V4Z"
+                fill="white" stroke="#666" stroke-width="2" />
+            <path d="M20 2V8H26" stroke="#666" stroke-width="2" stroke-linejoin="round" />
+            <rect x="4" y="18" width="24" height="10" rx="2" [attr.fill]="getFileColor(selectedFileType)" />
+            <text x="16" y="25" fill="white" font-family="sans-serif" font-size="8" font-weight="bold"
+                text-anchor="middle">{{ selectedFileType | uppercase }}</text>
+        </svg>
+    </div>
+    <p style="font-size: 0.9em; color: #666;">Supported formats: .txt, .md, .json, .pdf, .docx</p>
+
+    <!-- Progress Bar -->
+    <div *ngIf="isProcessing || progressPercent > 0"
+        style="margin-top: 20px; border: 1px solid #ccc; border-radius: 4px; overflow: hidden; background: #fff;">
+        <div style="height: 20px; background: #e9ecef; position: relative;">
+            <div [style.width.%]="progressPercent"
+                style="height: 100%; background: #28a745; transition: width 0.3s ease;"></div>
+            <span
+                style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); font-size: 12px; line-height: 20px; color: #333;">{{
+                progressPercent }}%</span>
+        </div>
+
+        <div
+            style="padding: 10px; display: flex; justify-content: space-between; align-items: center; background: #f8f9fa; border-bottom: 1px solid #eee;">
+            <span style="font-weight: bold; font-size: 0.9em;">Processing Steps</span>
+            <button *ngIf="progressPercent === 100" (click)="resetProgress.emit()"
+                style="padding: 2px 8px; font-size: 0.8em; cursor: pointer; border: 1px solid #ccc; background: #fff; border-radius: 4px;">Hide
+                Status</button>
+        </div>
+
+        <div *ngIf="modelLoadingProgress"
+            style="padding: 10px; background: #e2e3e5; font-size: 0.8em; border-bottom: 1px solid #ddd;">
+            <strong>Model Loading:</strong> {{ modelLoadingProgress }}
+        </div>
+
+        <details [open]="isProcessing" style="padding: 10px;">
+            <summary style="display: none;">Details</summary>
+            <ul style="list-style: none; padding: 0; margin: 0;">
+                <li *ngFor="let step of steps" style="padding: 5px 0; display: flex; align-items: center;">
+                    <span style="margin-right: 10px; width: 20px; text-align: center;">
+                        <span *ngIf="step.status === 'completed'" style="color: green;">✓</span>
+                        <span *ngIf="step.status === 'loading'">⏳</span>
+                        <span *ngIf="step.status === 'error'" style="color: red;">✗</span>
+                        <span *ngIf="step.status === 'pending'" style="color: #ccc;">○</span>
+                    </span>
+                    <span [style.color]="step.status === 'pending' ? '#999' : '#333'"
+                        [style.fontWeight]="step.status === 'loading' ? 'bold' : 'normal'">
+                        {{ step.name }}
+                    </span>
+                </li>
+            </ul>
+        </details>
+    </div>
+</div>

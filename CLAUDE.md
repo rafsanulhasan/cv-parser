@@ -203,7 +203,9 @@ await storageService.importDocuments(documentsArray);
 ## Key Files Reference
 
 ### Frontend
-- `app.component.ts`: Main orchestrator, UI controller, progress tracking (724 lines)
+- `app.component.ts`: Main orchestrator (delegates UI to child components)
+- `components/ui/`: `ModelSelect`, `FileUploader`, `DocumentList`
+- `components/feature/`: `ModelConfig` (Browser/Ollama/OpenInteractive settings)
 - `model-registry.service.ts`: Provider state, model catalogs, localStorage persistence (385 lines)
 - `ollama.service.ts`: Ollama API integration, multi-layer pull (307 lines)
 - `embedding.service.ts`: Multi-provider embedding facade

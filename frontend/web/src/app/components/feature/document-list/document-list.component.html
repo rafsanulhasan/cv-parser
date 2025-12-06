@@ -1,0 +1,87 @@
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+    <h3>Stored Documents ({{ documents.length }})</h3>
+    <div>
+        <input type="file" #importInput (change)="importData.emit($event)" accept=".json" style="display: none;">
+        <button (click)="importInput.click()"
+            style="padding: 5px 10px; margin-right: 5px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">Import
+            Data</button>
+        <button (click)="exportData.emit()" [disabled]="documents.length === 0"
+            [style.opacity]="documents.length === 0 ? 0.5 : 1"
+            [style.cursor]="documents.length === 0 ? 'not-allowed' : 'pointer'"
+            style="padding: 5px 10px; background: #17a2b8; color: white; border: none; border-radius: 4px;">Export
+            Data</button>
+    </div>
+</div>
+
+<div *ngFor="let doc of documents"
+    style="margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
+    <details style="background: #fff;">
+        <summary
+            style="padding: 15px; cursor: pointer; background: #f8f9fa; font-weight: bold; display: flex; justify-content: space-between; align-items: center;">
+            <span style="display: flex; align-items: center;">
+                <!-- Dynamic File Icon (Left) -->
+                <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"
+                    [title]="doc.fileType" style="margin-right: 15px;">
+                    <path
+                        d="M6 4C6 2.89543 6.89543 2 8 2H20L26 8V28C26 29.1046 25.1046 30 24 30H8C6.89543 30 6 29.1046 6 28V4Z"
+                        fill="white" stroke="#666" stroke-width="2" />
+                    <path d="M20 2V8H26" stroke="#666" stroke-width="2" stroke-linejoin="round" />
+                    <rect x="4" y="18" width="24" height="10" rx="2" [attr.fill]="getFileColor(doc.fileType)" />
+                    <text x="16" y="25" fill="white" font-family="sans-serif" font-size="8" font-weight="bold"
+                        text-anchor="middle">{{ doc.fileType | uppercase }}</text>
+                </svg>
+
+                <span>
+                    {{ doc.user_data?.fullName || 'Unknown Candidate' }}
+                    <span style="font-weight: normal; color: #666; font-size: 0.9em;">(ID: {{ doc.requestId | slice:0:8
+                        }}...)</span>
+                </span>
+            </span>
+            <button (click)="onDelete(doc.requestId, $event)"
+                style="padding: 2px 8px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8em;">Delete</button>
+        </summary>
+
+        <div style="padding: 20px; border-top: 1px solid #ddd;">
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; font-weight: bold; margin-bottom: 5px;">Document Location:</label>
+                <input type="text" [value]="doc.doc_location" readonly
+                    style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; background: #eee;">
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; font-weight: bold; margin-bottom: 5px;">Full Name:</label>
+                <input type="text" [value]="doc.user_data?.fullName" readonly
+                    style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; font-weight: bold; margin-bottom: 5px;">Email:</label>
+                <input type="text" [value]="doc.user_data?.email" readonly
+                    style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; font-weight: bold; margin-bottom: 5px;">Skills:</label>
+                <div style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; background: #f9f9f9;">
+                    {{ doc.user_data?.skills?.join(', ') }}
+                </div>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; font-weight: bold; margin-bottom: 5px;">Experience:</label>
+                <div *ngFor="let exp of doc.user_data?.experience"
+                    style="margin-bottom: 10px; padding: 10px; background: #f5f5f5; border-radius: 4px;">
+                    <strong>{{ exp.title }}</strong> at {{ exp.company }}<br>
+                    <span style="font-size: 0.9em; color: #666;">{{ exp.dates }}</span>
+                </div>
+            </div>
+
+            <div style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed #ccc;">
+                <p style="margin: 0; color: #666; font-size: 0.8em;"><strong>Doc Vector (First 5):</strong> [{{
+                    doc.doc_vector?.slice(0, 5)?.join(', ') }}...]</p>
+                <p style="margin: 5px 0 0 0; color: #666; font-size: 0.8em;"><strong>Data Vector (First 5):</strong> [{{
+                    doc.user_data_vector?.slice(0, 5)?.join(', ') }}...]</p>
+            </div>
+        </div>
+    </details>
+</div>
