@@ -3,5 +3,5 @@ backend/uploads
 backend/node_modules
 
 # Frontend
-frontend/web/.angular/cache/17.3.17/frontend/.tsbuildinfo
+frontend/web/.angular/cache/
 frontend/web/node_modules
