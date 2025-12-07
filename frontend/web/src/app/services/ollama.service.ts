@@ -66,6 +66,30 @@ export class OllamaService {
         this.apiUrl = url.replace( /\/$/, '' ); // Remove trailing slash
     }
 
+    getApiUrl (): string {
+        return this.apiUrl;
+    }
+
+    isConfigured (): boolean {
+        return !!this.apiUrl && this.apiUrl !== 'http://localhost:11434';
+    }
+
+    async getModelCapabilities ( modelId: string ): Promise<string[]> {
+        try {
+            const response = await fetch( `${ this.apiUrl }/show`, {
+                method: 'POST',
+                headers: this.getHeaders(),
+                body: JSON.stringify( { model: modelId, verbose: false } )
+            } );
+            if ( !response.ok ) return [];
+            const data = await response.json();
+            return data.capabilities || [];
+        } catch ( e ) {
+            console.warn( `Failed to get capabilities for ${ modelId }:`, e );
+            return [];
+        }
+    }
+
     private getHeaders (): HeadersInit {
         const headers: HeadersInit = { 'Content-Type': 'application/json' };
         if ( this.apiKey ) {

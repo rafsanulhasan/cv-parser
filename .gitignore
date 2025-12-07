@@ -6,3 +6,8 @@ backend/models-metadata.json
 # Frontend
 frontend/web/.angular/cache/
 frontend/web/node_modules
+frintend/dist/
+
+# Common
+
+.dist

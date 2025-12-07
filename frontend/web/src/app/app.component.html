@@ -62,19 +62,17 @@
 
         <!-- Injected Chat Model Selector -->
         <div slot="chat-model" style="display: flex; gap: 10px; align-items: flex-end; margin-bottom: 10px;">
-            <app-smart-dropdown style="flex: 1;" label="Chat Model" [groups]="unifiedChatModels"
-                [selectedModelId]="selectedChatModel" [showDownload]="isSelectedChatModelOllama"
-                [showDelete]="isSelectedChatModelOllama" [isInstalled]="isChatModelInstalled"
+            <app-smart-dropdown style="flex: 1;" label="Select a model" placeholder="Select a chat model"
+                [groups]="unifiedChatModels" [selectedModelId]="selectedChatModel"
+                [showDownload]="isSelectedChatModelOllama" [showDelete]="isSelectedChatModelOllama"
+                [isInstalled]="isChatModelInstalled"
                 [isPulling]="embeddingPullProgress.status !== '' && embeddingPullProgress.status !== 'success'"
                 [deleteConfirming]="confirmingEmbeddingDelete" (modelChange)="onChatModelChange($event)"
                 (download)="onDownloadModel({ id: selectedChatModel, type: 'chat' })"
                 (delete)="onDeleteModel({ id: selectedChatModel, type: 'chat' })" (cancelPull)="onCancelPull()"
-                (openBYOM)="isOpenAIKeyModalOpen = true">
+                (openBYOM)="isOpenAIKeyModalOpen = true" (configure)="onConfigureProvider($event)"
+                (inlineDelete)="onInlineDeleteModel($event)">
             </app-smart-dropdown>
-            <button (click)="openAddModelModal()" title="Add new model"
-                style="height: 38px; padding: 0 15px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2px;">
-                <span style="font-size: 1.2em; line-height: 1;">+</span> Add Model
-            </button>
         </div>
     </app-file-uploader>
 
@@ -86,4 +84,9 @@
     <!-- OpenAI API Key Modal -->
     <app-openai-key-modal *ngIf="isOpenAIKeyModalOpen" (close)="isOpenAIKeyModalOpen = false" (saved)="refreshModels()">
     </app-openai-key-modal>
+
+    <!-- Provider Config Modal -->
+    <app-provider-config-modal *ngIf="isProviderConfigModalOpen" [activeTab]="providerConfigActiveTab"
+        [focusField]="providerConfigFocusField" (close)="closeProviderConfigModal()" (saved)="onProviderConfigSaved()">
+    </app-provider-config-modal>
 </div>

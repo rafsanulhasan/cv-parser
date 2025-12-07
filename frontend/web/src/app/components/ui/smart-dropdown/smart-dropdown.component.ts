@@ -12,10 +12,12 @@ import { ModelConfig } from '../../../services/model-registry.service';
 } )
 export class SmartDropdownComponent {
     @Input() label: string = '';
+    @Input() placeholder: string = 'Select a chat model';
     @Input() models: ModelConfig[] = [];
     // Updated type to support nested hierarchy with optional metadata
-    @Input() groups: { label: string, options?: ModelConfig[], subgroups?: { label: string, options: ModelConfig[], noKeyConfigured?: boolean, message?: string }[] }[] = [];
+    @Input() groups: { label: string, options?: ModelConfig[], subgroups?: { label: string, options: ModelConfig[], noKeyConfigured?: boolean, message?: string, isConfigured?: boolean }[], isConfigured?: boolean }[] = [];
     @Input() selectedModelId: string = '';
+    @Input() isDataLoading: boolean = false;
 
     // Action States
     @Input() showDownload: boolean = false;
@@ -31,6 +33,8 @@ export class SmartDropdownComponent {
     @Output() openBYOM = new EventEmitter<void>(); // Open Bring Your Own Model modal
     @Output() delete = new EventEmitter<void>();
     @Output() cancelPull = new EventEmitter<void>();
+    @Output() configure = new EventEmitter<{ group: string, subgroup?: string }>(); // Open config modal
+    @Output() inlineDelete = new EventEmitter<string>(); // Delete model by ID from dropdown
 
     // Custom Dropdown State
     isOpen = false;
@@ -54,7 +58,7 @@ export class SmartDropdownComponent {
     get selectedModelName (): string {
         const model = this.getSelectedModel();
         if ( model ) return model.name;
-        return 'Select a Model...';
+        return this.placeholder;
     }
 
     getSelectedModel (): ModelConfig | undefined {
@@ -104,7 +108,29 @@ export class SmartDropdownComponent {
     }
 
     get isDisabled (): boolean {
-        return this.isPulling;
+        return this.isPulling || this.isDataLoading || !this.hasData;
+    }
+
+    get hasData (): boolean {
+        // True if any provider has at least one model
+        if ( this.models.length > 0 ) return true;
+        for ( const group of this.groups ) {
+            if ( group.options && group.options.length > 0 ) return true;
+            if ( group.subgroups ) {
+                for ( const subgroup of group.subgroups ) {
+                    if ( subgroup.options && subgroup.options.length > 0 ) return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    onConfigure ( group: string, subgroup?: string ) {
+        this.configure.emit( { group, subgroup } );
+    }
+
+    onInlineDelete ( modelId: string ) {
+        this.inlineDelete.emit( modelId );
     }
 
     // Handle click outside to close

@@ -93,25 +93,72 @@
 }
 
 /* Hierarchy Items */
-.group-header {
+.group-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   padding: 8px 12px;
   background-color: #f8f9fa;
+  border-bottom: 1px solid #eee;
+}
+
+.group-header-text {
   font-weight: 700;
   color: #333;
   font-size: 0.95em;
-  border-bottom: 1px solid #eee;
-  pointer-events: none;
 }
 
-.subgroup-header {
+.subgroup-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   padding: 6px 12px 6px 24px;
   background-color: #fff;
+}
+
+.subgroup-header-text {
   font-weight: 600;
   color: #555;
   font-size: 0.85em;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  pointer-events: none;
+}
+
+/* Configure Button */
+.configure-btn {
+  position: relative;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  font-size: 1em;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.configure-btn:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.configure-btn.small {
+  font-size: 0.85em;
+  padding: 2px 6px;
+}
+
+.config-status {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  font-size: 0.6em;
+  font-weight: bold;
+}
+
+.config-status.configured {
+  color: #28a745;
+}
+
+.config-status.not-configured {
+  color: #dc3545;
 }
 
 .dropdown-item {
@@ -196,4 +243,45 @@
 
 .byom-button:active {
   transform: translateY(0);
+}
+
+/* Badges Row */
+.badges-row {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.model-name {
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+/* Capability Badge (Green) */
+.item-badge.capability {
+  background: #d1e7dd;
+  color: #0f5132;
+  font-weight: 600;
+}
+
+/* Inline Delete Button */
+.inline-delete-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 2px 6px;
+  font-size: 0.9em;
+  border-radius: 4px;
+  transition: all 0.2s;
+  opacity: 0.6;
+}
+
+.inline-delete-btn:hover {
+  background-color: #ffebee;
+  opacity: 1;
+}
+
+.dropdown-item:hover .inline-delete-btn {
+  opacity: 0.8;
 }

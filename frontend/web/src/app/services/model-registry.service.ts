@@ -20,6 +20,7 @@ export interface ModelConfig {
   isInstalled?: boolean; // For Ollama models
   contextLength?: number | string;
   outputTokens?: number | string;
+  capabilities?: string[]; // For Ollama models: ["tools", "completion", etc.]
 }
 
 @Injectable( {
@@ -113,8 +114,22 @@ export class ModelRegistryService {
   private openAIKeySubject = new BehaviorSubject<string>( '' );
   openAIKey$ = this.openAIKeySubject.asObservable();
 
+  // Ollama Base URL tracking
+  private ollamaBaseUrlSubject = new BehaviorSubject<string>( 'http://localhost:11434' );
+  ollamaBaseUrl$ = this.ollamaBaseUrlSubject.asObservable();
+
   // Cache for OpenAI model metadata from backend
   public cachedOpenAIMetadata: any = null;
+
+  // Configuration state
+  get isOllamaConfigured (): boolean {
+    const url = this.ollamaBaseUrlSubject.value;
+    return !!url && url !== 'http://localhost:11434';
+  }
+
+  get isOpenAIConfigured (): boolean {
+    return !!this.openAIKeySubject.value;
+  }
 
   constructor (
     private ollamaService: OllamaService,
@@ -127,11 +142,56 @@ export class ModelRegistryService {
     const savedKey = localStorage.getItem( 'cv-parser-openai-key' );
     if ( savedKey ) this.openAIKeySubject.next( savedKey );
 
+    // Load Ollama URL from IndexedDB
+    this.loadOllamaBaseUrl();
+
     // Initial fetch
     this.refreshModels();
 
     // Fetch OpenAI metadata from backend
     this.fetchOpenAIMetadata();
+  }
+
+  /**
+   * Save Ollama Base URL to IndexedDB
+   */
+  async saveOllamaBaseUrl ( url: string ): Promise<void> {
+    this.ollamaBaseUrlSubject.next( url );
+    try {
+      const db = await this.openSettingsDB();
+      const tx = db.transaction( 'settings', 'readwrite' );
+      await tx.objectStore( 'settings' ).put( { key: 'ollamaBaseUrl', value: url } );
+      await tx.done;
+    } catch ( e ) {
+      console.error( 'Failed to save Ollama URL to IndexedDB:', e );
+    }
+  }
+
+  /**
+   * Load Ollama Base URL from IndexedDB
+   */
+  private async loadOllamaBaseUrl (): Promise<void> {
+    try {
+      const db = await this.openSettingsDB();
+      const result = await db.get( 'settings', 'ollamaBaseUrl' );
+      if ( result?.value ) {
+        this.ollamaBaseUrlSubject.next( result.value );
+        this.ollamaService.setApiUrl( result.value );
+      }
+    } catch ( e ) {
+      console.warn( 'Failed to load Ollama URL from IndexedDB:', e );
+    }
+  }
+
+  private async openSettingsDB () {
+    const { openDB } = await import( 'idb' );
+    return openDB( 'cv-parser-settings', 1, {
+      upgrade ( db ) {
+        if ( !db.objectStoreNames.contains( 'settings' ) ) {
+          db.createObjectStore( 'settings', { keyPath: 'key' } );
+        }
+      }
+    } );
   }
 
   /**
@@ -520,7 +580,7 @@ export class ModelRegistryService {
    * Returns chat models in a 3-level hierarchy for the dropdown:
    * Category (Offline/Online) -> Provider (Ollama/Browser/OpenAI) -> Models
    */
-  async getUnifiedChatModels (): Promise<{ label: string; subgroups: { label: string; options: ModelConfig[]; noKeyConfigured?: boolean; message?: string }[] }[]> {
+  async getUnifiedChatModels (): Promise<{ label: string; isConfigured?: boolean; subgroups: { label: string; options: ModelConfig[]; noKeyConfigured?: boolean; message?: string; isConfigured?: boolean }[] }[]> {
     const currentModels = this.chatModelsSubject.value;
     const provider = this.selectedProviderSubject.value;
 
@@ -529,18 +589,35 @@ export class ModelRegistryService {
     let browserModels: ModelConfig[] = [];
     let openaiModels: ModelConfig[] = [];
 
-    // Get Ollama models (installed only)
+    // Get Ollama models (installed only, filtered by capabilities)
     try {
       const ollamaList = await this.ollamaService.getModels();
-      ollamaModels = ollamaList.map( m => ( {
-        id: m.name,
-        name: m.name.replace( ':latest', '' ),
-        type: 'chat' as const,
-        provider: 'ollama' as const,
-        size: m.size ? this.formatBytes( m.size ) : undefined,
-        sizeBytes: m.size,
-        isInstalled: true
-      } ) );
+
+      // Filter models to only those with "tools" AND "completion" capabilities
+      const filteredModels: ModelConfig[] = [];
+      for ( const m of ollamaList.filter( m => m.isInstalled ) ) {
+        const modelDetails = await this.ollamaService.getModelDetails( m.name );
+        const capabilities = modelDetails?.capabilities || [];
+        const hasTools = capabilities.includes( 'tools' );
+        const hasCompletion = capabilities.includes( 'completion' );
+
+        if ( hasTools && hasCompletion ) {
+          filteredModels.push( {
+            id: m.name,
+            name: m.name.replace( ':latest', '' ),
+            type: 'chat' as const,
+            provider: 'ollama' as const,
+            size: m.size ? this.formatBytes( m.size ) : undefined,
+            sizeBytes: m.size,
+            isInstalled: true,
+            capabilities: capabilities,
+            quantization: m.details?.quantization_level || modelDetails?.details?.quantization_level,
+            contextLength: modelDetails?.model_info?.[ 'general.context_length' ] || modelDetails?.parameters?.num_ctx,
+            details: m.details?.parameter_size || modelDetails?.details?.parameter_size
+          } );
+        }
+      }
+      ollamaModels = filteredModels;
     } catch ( e ) {
       console.warn( 'Could not fetch Ollama models for unified list' );
     }
@@ -616,25 +693,30 @@ export class ModelRegistryService {
       }
     }
 
-    // Build 3-level hierarchy with metadata
+    // Build 3-level hierarchy with metadata and configuration state
     const hasOpenAIKey = !!key;
+    const isOllamaConfigured = this.isOllamaConfigured;
+    const isOpenAIConfigured = this.isOpenAIConfigured;
 
     return [
       {
         label: 'Offline',
+        isConfigured: isOllamaConfigured, // At least one offline service configured
         subgroups: [
-          { label: 'Ollama', options: ollamaModels },
-          { label: 'Browser Based', options: browserModels }
+          { label: 'Ollama', options: ollamaModels, isConfigured: isOllamaConfigured },
+          { label: 'Browser Based', options: browserModels } // Browser always works, no config needed
         ]
       },
       {
         label: 'Online',
+        isConfigured: isOpenAIConfigured,
         subgroups: [
           {
             label: 'OpenAI',
             options: openaiModels,
             noKeyConfigured: !hasOpenAIKey,
-            message: !hasOpenAIKey ? 'No OpenAI API key configured.' : undefined
+            message: !hasOpenAIKey ? 'No OpenAI API key configured.' : undefined,
+            isConfigured: isOpenAIConfigured
           }
         ]
       }

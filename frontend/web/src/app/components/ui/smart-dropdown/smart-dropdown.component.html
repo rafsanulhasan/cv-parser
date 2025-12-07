@@ -26,13 +26,31 @@
         <ng-container *ngIf="groups.length > 0; else flatList">
           <ng-container *ngFor="let group of groups">
 
-            <!-- Level 1 Header -->
-            <div class="group-header">{{ group.label }}</div>
+            <!-- Level 1 Header with Configure Button -->
+            <div class="group-header-row">
+              <span class="group-header-text">{{ group.label }}</span>
+              <button class="configure-btn" (click)="onConfigure(group.label); $event.stopPropagation()"
+                title="Configure {{ group.label }}">
+                ⚙️
+                <span *ngIf="group.isConfigured === true" class="config-status configured">✓</span>
+                <span *ngIf="group.isConfigured === false" class="config-status not-configured">❗</span>
+              </button>
+            </div>
 
             <!-- Subgroups (Level 2) -->
             <ng-container *ngIf="group.subgroups">
               <ng-container *ngFor="let subgroup of group.subgroups">
-                <div class="subgroup-header">{{ subgroup.label }}</div>
+                <div class="subgroup-header-row">
+                  <span class="subgroup-header-text">{{ subgroup.label }}</span>
+                  <!-- Configure button for Ollama and OpenAI, NOT for Browser Based -->
+                  <button *ngIf="subgroup.label !== 'Browser Based'" class="configure-btn small"
+                    (click)="onConfigure(group.label, subgroup.label); $event.stopPropagation()"
+                    title="Configure {{ subgroup.label }}">
+                    ⚙️
+                    <span *ngIf="subgroup.isConfigured === true" class="config-status configured">✓</span>
+                    <span *ngIf="subgroup.isConfigured === false" class="config-status not-configured">❗</span>
+                  </button>
+                </div>
 
                 <!-- Show message and BYOM button if no API key configured -->
                 <div *ngIf="subgroup.noKeyConfigured" class="no-key-message">
@@ -46,24 +64,38 @@
                 <ng-container *ngIf="!subgroup.noKeyConfigured">
                   <div *ngFor="let model of subgroup.options" class="dropdown-item"
                     [class.selected]="model.id === selectedModelId" (click)="selectModel(model.id)">
-                    <span>{{ model.name }}</span>
-                    <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                    <span class="model-name">{{ model.name }}</span>
+                    <div class="badges-row">
+                      <!-- Capability badges (green) for Ollama -->
+                      <ng-container *ngIf="model.capabilities && model.capabilities.length > 0">
+                        <span *ngFor="let cap of model.capabilities" class="item-badge capability">{{ cap }}</span>
+                      </ng-container>
+                      <!-- Size badge -->
                       <span *ngIf="model.sizeBytes" class="item-badge">{{ formatSize(model.sizeBytes) }}</span>
                       <span *ngIf="model.size && !model.sizeBytes" class="item-badge">{{ model.size }}</span>
+                      <!-- Context length badge -->
                       <span
                         *ngIf="model.contextLength && model.contextLength !== 'Unknown' && model.contextLength !== 'N/A'"
                         class="item-badge">{{
                         formatNumber(model.contextLength) }}
                         ctx</span>
+                      <!-- Output tokens badge -->
                       <span
                         *ngIf="model.outputTokens && model.outputTokens !== 'Unknown' && model.outputTokens !== 'N/A'"
                         class="item-badge">{{
                         formatNumber(model.outputTokens) }}
                         out</span>
+                      <!-- Quantization badge -->
                       <span *ngIf="model.quantization" class="item-badge">{{ model.quantization }}</span>
+                      <!-- Details/params badge -->
                       <span *ngIf="model.details && model.details !== 'Unknown' && model.details !== 'N/A'"
                         class="item-badge details">{{
                         model.details }}</span>
+                      <!-- Delete button for Ollama models -->
+                      <button *ngIf="model.provider === 'ollama' && model.isInstalled" class="inline-delete-btn"
+                        (click)="onInlineDelete(model.id); $event.stopPropagation()" title="Delete {{ model.name }}">
+                        🗑️
+                      </button>
                     </div>
                   </div>
                 </ng-container>

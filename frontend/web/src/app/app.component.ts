@@ -19,6 +19,7 @@ import { OpenAiConfigComponent } from './components/feature/model-config/tabs/op
 import { AddModelModalComponent } from './components/ui/add-model-modal/add-model-modal.component';
 import { SmartDropdownComponent } from './components/ui/smart-dropdown/smart-dropdown.component';
 import { OpenAIKeyModalComponent } from './components/ui/openai-key-modal/openai-key-modal.component';
+import { ProviderConfigModalComponent } from './components/ui/provider-config-modal/provider-config-modal.component';
 
 @Component( {
   selector: 'app-root',
@@ -33,7 +34,8 @@ import { OpenAIKeyModalComponent } from './components/ui/openai-key-modal/openai
     OpenAiConfigComponent,
     AddModelModalComponent,
     SmartDropdownComponent,
-    OpenAIKeyModalComponent
+    OpenAIKeyModalComponent,
+    ProviderConfigModalComponent
   ],
   templateUrl: './app.component.html',
   styleUrls: [ './app.component.css' ]
@@ -51,6 +53,11 @@ export class AppComponent implements OnInit, OnDestroy {
   // Add Model Modal State
   isAddModelModalOpen = false;
   isOpenAIKeyModalOpen = false;
+
+  // Provider Config Modal State
+  isProviderConfigModalOpen = false;
+  providerConfigActiveTab: 'online' | 'offline' = 'offline';
+  providerConfigFocusField: 'ollama-url' | 'openai-key' | null = null;
 
   // Pipeline Steps
   steps: ProgressStep[] = [
@@ -187,6 +194,39 @@ export class AppComponent implements OnInit, OnDestroy {
       this.modelRegistry.refreshModels();
     }
     this.closeAddModelModal();
+  }
+
+  // --- Provider Config Modal ---
+  onConfigureProvider ( event: { group: string, subgroup?: string } ) {
+    const { group, subgroup } = event;
+
+    // Determine which tab to open and which field to focus
+    if ( group === 'Offline' ) {
+      this.providerConfigActiveTab = 'offline';
+      if ( subgroup === 'Ollama' ) {
+        this.providerConfigFocusField = 'ollama-url';
+      } else {
+        this.providerConfigFocusField = null;
+      }
+    } else if ( group === 'Online' ) {
+      this.providerConfigActiveTab = 'online';
+      if ( subgroup === 'OpenAI' ) {
+        this.providerConfigFocusField = 'openai-key';
+      } else {
+        this.providerConfigFocusField = null;
+      }
+    }
+
+    this.isProviderConfigModalOpen = true;
+  }
+
+  closeProviderConfigModal () {
+    this.isProviderConfigModalOpen = false;
+    this.providerConfigFocusField = null;
+  }
+
+  onProviderConfigSaved () {
+    this.refreshModels();
   }
 
   onOllamaApiUrlChange ( url: string ) {
@@ -437,6 +477,16 @@ export class AppComponent implements OnInit, OnDestroy {
       this.confirmingEmbeddingDelete = false;
     } catch ( err: any ) {
       alert( 'Deletion failed: ' + err.message );
+    }
+  }
+
+  async onInlineDeleteModel ( modelId: string ) {
+    try {
+      await this.ollamaService.deleteModel( modelId );
+      // Refresh to remove from dropdown
+      await this.refreshModels();
+    } catch ( err: any ) {
+      alert( 'Failed to delete model: ' + err.message );
     }
   }
 
